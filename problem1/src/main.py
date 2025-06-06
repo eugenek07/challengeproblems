@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # Assumption, both users have the public RSA/ECDSA keys of their counterpart, and their own corresponding private keys.
 # Assumption 2, both users share a secret key for HMAC purposes
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
@@ -8,10 +7,8 @@ import hmac
 import aes
 import ecdsa
 import hkdf
-=======
 # Assumption 1, both users have the public RSA/ECDSA keys of their counterpart, and their own corresponding private keys.
 # Assumption 2, both users know what info they'll pass to the key derivation function
->>>>>>> 905a72b8153f37c05ab2c3b9fd3f3a54704aab32
 import os
 import rsa, hmac, aes, ecdsa, hkdf
 
@@ -54,7 +51,6 @@ message = b'malazan rules!'
 
     #Step 1: Encrypt with AES key
 ciphertext = aes.encrypt(message, sender_aes_key)
-    encryptor = Cipher(algorithms.AES(sender_aes_key), modes.CBC(iv))
 
     #Step 2: Use SHA256 to create HMAC
 cipher_hmac = hmac.addhmac(ciphertext, sender_hmac_key)

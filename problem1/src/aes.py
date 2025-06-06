@@ -8,4 +8,4 @@ def encrypt(message, aes_key):
     ciphertext = encryptor.update(message) + encryptor.finalize()
     return ciphertext
 
-def decrypt(message, aes_key)
+def decrypt(message, aes_key, iv)
