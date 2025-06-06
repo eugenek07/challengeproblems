@@ -1,7 +1,17 @@
+# Assumption, both users have the public RSA/ECDSA keys of their counterpart, and their own corresponding private keys.
+# Assumption 2, both users share a secret key for HMAC purposes
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from cryptography.hazmat.primitives import hashes, hmac
+import rsa
+import hmac
+import aes
+import ecdsa
+import hkdf
 # Assumption 1, both users have the public RSA/ECDSA keys of their counterpart, and their own corresponding private keys.
 # Assumption 2, both users know what info they'll pass to the key derivation function
 import os
 import rsa, hmac, aes, ecdsa, hkdf
+
 
 # Scheme
 # Initial Handshake: Message(Root Key) -> RSA() encryption -> Sign with ECDSA()
@@ -12,7 +22,8 @@ import rsa, hmac, aes, ecdsa, hkdf
 #Goal: Confidentiality, Authenticity, Integrity
 
 # 1st Task: Sender sends over root key (randomly generated)
-rootkey = os.random(32) # Need to check size necessary for root key
+rootkey = os.urandom(32) # Need to check size necessary for root key
+iv = os.urandom(16)
 
     # Step 1: Encrypt rootkey using RSA encryption
 ciphertext = rsa.encrypt(rootkey, rsakey_public)
@@ -40,10 +51,10 @@ receiver_aes_key, receiver_hmac_key = hkdf.derive_keys(rootkey)
 message = b'malazan rules!'
 
     #Step 1: Encrypt with AES key
-ciphertext = aes.encrypt(message, sender_aes_key)
+ciphertext = aes.encrypt(message, sender_aes_key, iv)
 
     #Step 2: Use SHA256 to create HMAC
-cipher_hmac = hmac.addhmac(ciphertext, sender_hmac_key)
+cipher_hmac = hmac.addhmac(ciphertext, sender_hmac_key, iv)
 
 #4th Task: User 2 decrypts message
 
