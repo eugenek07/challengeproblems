@@ -45,7 +45,7 @@ plaintext = rsa.decrypt(ciphertext, rsakey_private)
 
     # Step 1:
 sender_aes_key, sender_hmac_key = hkdf.derive_keys(rootkey)
-receiver_aes_key, receiver_hmac_key = hkdf.derive_keys(rootkey)
+receiver_aes_key, receiver_hmac_key = hkdf.derive_keys(plaintext)
 
 #4th Task: User 1 sends message
 message = b'malazan rules!'
@@ -54,7 +54,7 @@ message = b'malazan rules!'
 ciphertext = aes.encrypt(message, sender_aes_key, iv)
 
     #Step 2: Use SHA256 to create HMAC
-cipher_hmac = hmac.addhmac(ciphertext, sender_hmac_key, iv)
+cipher_hmac = hmac.addhmac(ciphertext, sender_hmac_key)
 
 #4th Task: User 2 decrypts message
 
@@ -62,7 +62,7 @@ cipher_hmac = hmac.addhmac(ciphertext, sender_hmac_key, iv)
 plaintext = aes.decrypt(cipher_hmac[0:32], receiver_aes_key)
 
     # Step 2: Use SHA256 to verify HMAC
-verified = hmac.verifyhmac(plaintext, cipher_hmac[32:64], receiver_hmac_key)
+verified = hmac.verify_hmac(ciphertext, cipher_hmac, receiver_hmac_key)
 if verified == False:
     print("hmac verification failed!")
 
