@@ -42,7 +42,11 @@ def encrypt(plaintext, pub):
             3. Use a Mask Generation Function (MGF), 'G', to make 'r' into 'k' bytes. Result is G(r) 
             4. The "fixed" plaintext is 'M' XOR 'G(r)'
     '''
+<<<<<<< HEAD
     # plaintext = plaintext.encode("utf-8")
+=======
+    plaintext = plaintext
+>>>>>>> a5fb1419fafeef1d1c49911d832cc0fec154fe8f
     ciphertext = pub.encrypt(plaintext, padding.OAEP(mgf = padding.MGF1(algorithm = hashes.SHA256()), 
                                                             algorithm = hashes.SHA256(), label = None)) 
                                                         
@@ -55,7 +59,7 @@ def decrypt(ciphertext, priv):
     ''' 
     decrypted = priv.decrypt(ciphertext, padding.OAEP(mgf = padding.MGF1(algorithm = hashes.SHA256()),
                                                       algorithm = hashes.SHA256(), label = None))
-    decrypted = decrypted.decode("utf-8")
+    decrypted = decrypted
     return decrypted
 
 # def main():
