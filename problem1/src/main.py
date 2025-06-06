@@ -1,11 +1,7 @@
-# Assumption, both users have the public RSA/ECDSA keys of their counterpart, and their own corresponding private keys.
-# Assumption 2, both users share a secret key for HMAC purposes
-import rsa
-import hmac
-import aes
-import ecdsa
-import hkdf
+# Assumption 1, both users have the public RSA/ECDSA keys of their counterpart, and their own corresponding private keys.
+# Assumption 2, both users know what info they'll pass to the key derivation function
 import os
+import rsa, hmac, aes, ecdsa, hkdf
 
 # Scheme
 # Initial Handshake: Message(Root Key) -> RSA() encryption -> Sign with ECDSA()
