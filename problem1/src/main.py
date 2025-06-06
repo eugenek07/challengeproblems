@@ -24,6 +24,8 @@ import rsa, hmac, aes, ecdsa, hkdf
 # 1st Task: Sender sends over root key (randomly generated)
 rootkey = os.urandom(32) # Need to check size necessary for root key
 iv = os.urandom(16)
+rsakey_public, rsakey_private = rsa.generate_keys()
+signaturekey_public, signaturekey_private = ecdsa.generate_keys()
 
     # Step 1: Encrypt rootkey using RSA encryption
 ciphertext = rsa.encrypt(rootkey, rsakey_public)
