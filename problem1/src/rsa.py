@@ -7,33 +7,32 @@ from cryptography.hazmat.primitives import serialization, hashes
     2. https://cryptography.io/en/latest/hazmat/primitives/asymmetric/rsa/
 '''
 
-# def generate_keys():
-#     '''
-#         This function generates the public key pair, (n, e), and the private key pair, (n, d). The public key pair is used by the sender to encrypt the
-#         information and the private key is used by the receiver to decrypt the information
-#     '''
-#     private_key = rsa.generate_private_key(public_exponent = 65537, key_size = 2048) # public_exponent is 'e' in the 
-#                                                                             # process of generating keys. 
-#                                                                         # Recall: choose e that is rel. prime to n
-#     public_key = private_key.public_key() 
+def generate_keys():
+    '''
+        This function generates the public key pair, (n, e), and the private key pair, (n, d). The public key pair is used by the sender to encrypt the
+        information and the private key is used by the receiver to decrypt the information
+    '''
+    private_key = rsa.generate_private_key(public_exponent = 65537, key_size = 2048) 
+    public_key = private_key.public_key() 
+    return public_key, private_key
 
-#     # # because the public and private keys are objects, when we print them, they only show the object's location
-#     # # we can inspect the key by printing them in pem format like below
-#     # private_pem = PRIVATE_KEY.private_bytes(
-#     #     encoding=serialization.Encoding.PEM,
-#     #     format=serialization.PrivateFormat.PKCS8,
-#     #     encryption_algorithm=serialization.NoEncryption()
-#     # )
 
-#     # public_pem = PUBLIC_KEY.public_bytes(
-#     #     encoding=serialization.Encoding.PEM,
-#     #     format=serialization.PublicFormat.SubjectPublicKeyInfo
-#     # )
+    # public_exponent is 'e' in the process of generating keys. Recall: choose e that is rel. prime to n
+    # # because the public and private keys are objects, when we print them, they only show the object's location
+    # # we can inspect the key by printing them in pem format like below
+    # private_pem = PRIVATE_KEY.private_bytes(
+    #     encoding=serialization.Encoding.PEM,
+    #     format=serialization.PrivateFormat.PKCS8,
+    #     encryption_algorithm=serialization.NoEncryption()
+    # )
 
-#     # print("Public Key in Pem Format: ", public_pem)
-#     # print("Private Key in Pem Format: ", private_pem)
+    # public_pem = PUBLIC_KEY.public_bytes(
+    #     encoding=serialization.Encoding.PEM,
+    #     format=serialization.PublicFormat.SubjectPublicKeyInfo
+    # )
 
-#     return public_key, private_key
+    # print("Public Key in Pem Format: ", public_pem)
+    # print("Private Key in Pem Format: ", private_pem)
 
 def encrypt(plaintext, pub):
     '''

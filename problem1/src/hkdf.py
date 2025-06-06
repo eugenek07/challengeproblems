@@ -1,5 +1,5 @@
 import os
-from cryptography.hazmat.primitves import hashes
+from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 
 # How do we insert randomness into hkdf formula?
@@ -12,7 +12,7 @@ from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 # Reference: https://datatracker.ietf.org/doc/html/rfc5869
 
 # Public Salt Information
-salt = os.random(16)
+salt = os.urandom(16)
 
 aes_generator = HKDF(
     algorithm = hashes.SHA256(), 
