@@ -9,6 +9,7 @@ from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 
 # Reference: https://eprint.iacr.org/2010/264.pdf
 # HKDF Scheme by Hugo Krawczyk
+# Reference: https://datatracker.ietf.org/doc/html/rfc5869
 
 # Public Salt Information
 salt = os.random(16)
