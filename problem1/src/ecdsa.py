@@ -6,7 +6,7 @@ def sign(data, private_key):
     return signature
 
 def verify(signature, data, public_key):
-    public_key.verify(signature, data, ec.ECDSA(hashes.SHA256))
+    public_key.verify(signature, data, ec.ECDSA(hashes.SHA256()))
 
 def generate_keys():
     private_key = ec.generate_private_key(ec.SECP521R1())
