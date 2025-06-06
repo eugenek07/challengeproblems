@@ -1,17 +1,7 @@
 # Assumption, both users have the public RSA/ECDSA keys of their counterpart, and their own corresponding private keys.
 # Assumption 2, both users share a secret key for HMAC purposes
-from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-from cryptography.hazmat.primitives import hashes, hmac
-import rsa
-import hmac
-import aes
-import ecdsa
-import hkdf
-# Assumption 1, both users have the public RSA/ECDSA keys of their counterpart, and their own corresponding private keys.
-# Assumption 2, both users know what info they'll pass to the key derivation function
 import os
 import rsa, hmac, aes, ecdsa, hkdf
-
 
 # Scheme
 # Initial Handshake: Message(Root Key) -> RSA() encryption -> Sign with ECDSA()
@@ -72,3 +62,9 @@ if message == plaintext:
     print("Works!")
 else:
     print("Doesn't Work!")
+
+
+#  TEST: Large File Sending
+# Read file 16 bytes at a time, encrypt, and send.
+# file = open(file.txt, mode='r', encoding='utf-8')
+# content = file.read(16)
