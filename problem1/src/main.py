@@ -58,11 +58,12 @@ cipher_hmac = hmac.addhmac(ciphertext, sender_hmac_key)
 
 #4th Task: User 2 decrypts message
 
-    # Step 1: Decrypt Symmetric AES key using RSA decryption
+    # Step 1: Use SHA256 to verify HMAC
+verified = hmac.verify_hmac(ciphertext, cipher_hmac, receiver_hmac_key)
+
+    # Step 2: Decrypt Symmetric AES key using RSA decryption
 plaintext = aes.decrypt(cipher_hmac, receiver_aes_key)
 
-    # Step 2: Use SHA256 to verify HMAC
-verified = hmac.verify_hmac(ciphertext, cipher_hmac, receiver_hmac_key)
 if verified == False:
     print("hmac verification failed!")
 
