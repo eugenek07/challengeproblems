@@ -53,7 +53,7 @@ receiver_aes_key, receiver_hmac_key = hkdf.derive_keys(plaintext)
 message = b'malazan rules!'
 
     #Step 1: Encrypt with AES key
-ciphertext = aes.encrypt(message, sender_aes_key, iv)
+ciphertext = aes.encrypt(message, sender_aes_key)
 
     #Step 2: Use SHA256 to create HMAC
 cipher_hmac = hmac.addhmac(ciphertext, sender_hmac_key)
