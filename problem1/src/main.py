@@ -26,7 +26,7 @@ signature = ecdsa.sign(ciphertext, signaturekey_private)
 # 2nd Task: Receiver receives encrypted message
 
     # Step 1: Verify Sign
-ciphertext, verified = ecdsa.verify(signature, ciphertext, signaturekey_public)
+verified = ecdsa.verify(signature, ciphertext, signaturekey_public)
 if verified == False:
     print("ecdsa verification failed!")
 
