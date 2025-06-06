@@ -31,12 +31,12 @@ signaturekey_public, signaturekey_private = ecdsa.generate_keys()
 ciphertext = rsa.encrypt(rootkey, rsakey_public)
 
     #Step 3: Sign ciphertext with ECDSA to verify authenticity
-encrypted_message = ecdsa.sign(ciphertext, signaturekey_private)
+signature = ecdsa.sign(ciphertext, signaturekey_private)
 
 # 2nd Task: Receiver receives encrypted message
 
     # Step 1: Verify Sign
-ciphertext, verified = ecdsa.verify(encrypted_message, signaturekey_public)
+ciphertext, verified = ecdsa.verify(signature, ciphertext, signaturekey_public)
 if verified == False:
     print("ecdsa verification failed!")
 
