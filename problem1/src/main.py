@@ -1,7 +1,7 @@
 # Assumption, both users have the public RSA/ECDSA keys of their counterpart, and their own corresponding private keys.
 # Assumption 2, both users share a secret key for HMAC purposes
 import os
-import rsa, hmac, aes, ecdsa, hkdf
+import rsa, my_hmac, aes, ecdsa, hkdf
 
 # Scheme
 # Initial Handshake: Message(Root Key) -> RSA() encryption -> Sign with ECDSA()
@@ -46,12 +46,12 @@ message = b'malazan rules!'
 ciphertext = aes.encrypt(message, sender_aes_key, iv)
 
     #Step 2: Use SHA256 to create HMAC
-cipher_hmac = hmac.add_hmac(ciphertext, sender_hmac_key)
+cipher_hmac = my_hmac.add_hmac(ciphertext, sender_hmac_key)
 
 #4th Task: User 2 decrypts message
 
     # Step 1: Use SHA256 to verify HMAC
-verified = hmac.verify_hmac(ciphertext, cipher_hmac, receiver_hmac_key)
+verified = my_hmac.verify_hmac(ciphertext, cipher_hmac, receiver_hmac_key)
 
     # Step 2: Decrypt Symmetric AES key using RSA decryption
 plaintext = aes.decrypt(ciphertext, receiver_aes_key, iv)
