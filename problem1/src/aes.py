@@ -4,7 +4,7 @@ from cryptography.hazmat.primitives import hashes, hmac
 import os
 
 # encrpyts using AES in CBC mode 
-def encrypt(plain_text, aes_key, iv):
+def encrypt(plain_text, aes_key, iv): # plain_text must be in bytes, not a string that's decoded! 
     padder = padding.PKCS7(128).padder()
     padded_pt = padder.update(plain_text) + padder.finalize()
     
