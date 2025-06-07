@@ -67,5 +67,9 @@ else:
 
 #  TEST: Large File Sending
 # Read file 16 bytes at a time, encrypt, and send.
+
+# creating a large file...
+with open("large_test.txt", "wb") as f:
+    f.write(os.urandom(10000000)) 
 # file = open(file.txt, mode='r', encoding='utf-8')
 # content = file.read(16)
