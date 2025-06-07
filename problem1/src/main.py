@@ -43,10 +43,10 @@ receiver_aes_key, receiver_hmac_key = hkdf.derive_keys(plaintext)
 message = b'malazan rules!'
 
     #Step 1: Encrypt with AES key
-ciphertext = aes.encrypt(message, sender_aes_key)
+ciphertext = aes.encrypt(message, sender_aes_key, iv)
 
     #Step 2: Use SHA256 to create HMAC
-cipher_hmac = hmac.addhmac(ciphertext, sender_hmac_key)
+cipher_hmac = hmac.add_hmac(ciphertext, sender_hmac_key)
 
 #4th Task: User 2 decrypts message
 
@@ -54,7 +54,7 @@ cipher_hmac = hmac.addhmac(ciphertext, sender_hmac_key)
 verified = hmac.verify_hmac(ciphertext, cipher_hmac, receiver_hmac_key)
 
     # Step 2: Decrypt Symmetric AES key using RSA decryption
-plaintext = aes.decrypt(cipher_hmac, receiver_aes_key)
+plaintext = aes.decrypt(ciphertext, receiver_aes_key, iv)
 
 if verified == False:
     print("hmac verification failed!")
