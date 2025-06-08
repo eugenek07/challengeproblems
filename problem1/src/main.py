@@ -22,7 +22,7 @@ with open("large_test.txt", "wb") as f:
 
 # 1st Task: Sender sends root key (randomly generated)
 rootkey = os.urandom(32) # Need to check size necessary for root key
-iv = os.urandom(16)
+
 rsakey_public, rsakey_private = rsa.generate_keys()
 signaturekey_public, signaturekey_private = ecdsa.generate_keys()
 
@@ -81,13 +81,13 @@ receiver_aes_key, receiver_hmac_key = hkdf.derive_keys(plaintext) # now, our sym
 with open("large_test.txt", 'rb') as fp: 
     byte_chunk = fp.read(16) # read 16 bytes. Note: type(chunk) = byte! 
     while byte_chunk: 
-        ciphertext = aes.encrypt(byte_chunk, sender_aes_key, iv) # encrypting the chunk
-        ciper_hmac = my_hmac.add_hmac(ciphertext, sender_hmac_key) # hashing the chunk
-        verified = my_hmac.verify_hmac(ciphertext, ciper_hmac, receiver_hmac_key) # verify the integrity of the chunk
+        ciphertext_with_iv = aes.encrypt(byte_chunk, sender_aes_key) # encrypting the chunk
+        ciper_hmac = my_hmac.add_hmac(ciphertext_with_iv, sender_hmac_key) # hashing the chunk
+        verified = my_hmac.verify_hmac(ciphertext_with_iv, ciper_hmac, receiver_hmac_key) # verify the integrity of the chunk
         if not verified: 
             print("Something was tampered with in this chunk! Aborting...")
             exit()
-        plaintext = aes.decrypt(ciphertext, receiver_aes_key, iv) # decrypt the chunk
+        plaintext = aes.decrypt(ciphertext_with_iv, receiver_aes_key) # decrypt the chunk
         if plaintext != byte_chunk: 
             print("The original chunk is not the same as the decrypted chunk! Aborting...")
             exit()
