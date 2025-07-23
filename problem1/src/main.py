@@ -83,6 +83,9 @@ with open("large_test.txt", 'rb') as fp:
     while byte_chunk: 
         ciphertext_with_iv = aes.encrypt(byte_chunk, sender_aes_key) # encrypting the chunk
         ciper_hmac = my_hmac.add_hmac(ciphertext_with_iv, sender_hmac_key) # hashing the chunk
+        #######
+        #Here we simulate transmission of the file over a network 
+        ######
         verified = my_hmac.verify_hmac(ciphertext_with_iv, ciper_hmac, receiver_hmac_key) # verify the integrity of the chunk
         if not verified: 
             print("Something was tampered with in this chunk! Aborting...")
