@@ -1,5 +1,5 @@
 from cryptography.hazmat.primitives.asymmetric import rsa, padding
-from cryptography.hazmat.primitives import serialization, hashes 
+from cryptography.hazmat.primitives import hashes 
 
 '''
     References: 
@@ -16,24 +16,6 @@ def generate_keys():
     public_key = private_key.public_key() 
     return public_key, private_key
 
-
-    # public_exponent is 'e' in the process of generating keys. Recall: choose e that is rel. prime to n
-    # # because the public and private keys are objects, when we print them, they only show the object's location
-    # # we can inspect the key by printing them in pem format like below
-    # private_pem = PRIVATE_KEY.private_bytes(
-    #     encoding=serialization.Encoding.PEM,
-    #     format=serialization.PrivateFormat.PKCS8,
-    #     encryption_algorithm=serialization.NoEncryption()
-    # )
-
-    # public_pem = PUBLIC_KEY.public_bytes(
-    #     encoding=serialization.Encoding.PEM,
-    #     format=serialization.PublicFormat.SubjectPublicKeyInfo
-    # )
-
-    # print("Public Key in Pem Format: ", public_pem)
-    # print("Private Key in Pem Format: ", private_pem)
-
 def encrypt(plaintext, pub):
     '''
         This function encrypts the plaintext with the public key, pub. In terms of OAEP, the high-level idea is: 
@@ -44,9 +26,7 @@ def encrypt(plaintext, pub):
     '''
     plaintext = plaintext
     ciphertext = pub.encrypt(plaintext, padding.OAEP(mgf = padding.MGF1(algorithm = hashes.SHA256()), 
-                                                            algorithm = hashes.SHA256(), label = None)) 
-                                                        
-    
+                                algorithm = hashes.SHA256(), label = None)) 
     return ciphertext
 
 def decrypt(ciphertext, priv):
@@ -57,17 +37,3 @@ def decrypt(ciphertext, priv):
                                                       algorithm = hashes.SHA256(), label = None))
     decrypted = decrypted
     return decrypted
-
-# def main():
-#     print("Let's start")
-#     public_key, private_key = generate_keys()
-#     plaintext = "Encrypt me" 
-#     ciphertext = encrypt(plaintext, public_key)
-#     decrypted = decrypt(ciphertext, private_key)
-
-#     if plaintext == decrypted:
-#         print("Encryption worked")
-#     else: 
-#         print(f"Your original plaintext was: {plaintext}. But your result was: {decrypted}")
-
-# main()
