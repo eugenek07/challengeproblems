@@ -1,5 +1,7 @@
 # Assumption, both users have the public RSA/ECDSA keys of their counterpart, and their own corresponding private keys.
 # Assumption 2, both users share a secret key for HMAC purposes
+
+
 import os
 import rsa, my_hmac, aes, ecdsa, hkdf
 
@@ -13,15 +15,12 @@ import rsa, my_hmac, aes, ecdsa, hkdf
 # Step 2: decrypt the intermediate text file 16 bytes at a time into a final file 
 # Step 3: if the original file (large_test.txt) content matches the final file, the encryption/decryption is correct
 
-# creating a large file of 10MB...
+# creating a large file of 10MB
 with open("large_test.txt", "wb") as f:
     f.write(os.urandom(10000000))
+rootkey = os.urandom(32) 
 
 
-#Goal: Confidentiality, Authenticity, Integrity
-
-# 1st Task: Sender sends root key (randomly generated)
-rootkey = os.urandom(32) # Need to check size necessary for root key
 
 rsakey_public, rsakey_private = rsa.generate_keys()
 signaturekey_public, signaturekey_private = ecdsa.generate_keys()

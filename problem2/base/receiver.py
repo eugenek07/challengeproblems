@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # sender.py
 from scapy.all import *
 from scapy.layers.ntp import NTP
@@ -40,3 +41,6 @@ if __name__ == '__main__':
 
     ip = sys.argv[1]
     send_ntp_request(ip)
+=======
+# INSERT CODE
+>>>>>>> c6fdae50fb5bea0b74513cca03c33e0579dc0324
