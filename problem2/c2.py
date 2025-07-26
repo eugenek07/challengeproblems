@@ -10,6 +10,7 @@ import queue
 NTP_PAD_KEY = 0x4A
 NTP_UNIX_OFFSET = 2208988800
 message_queue = queue.Queue()
+my_ip = get_if_addr(conf.iface)
 message = ''
 
 
@@ -128,12 +129,12 @@ def extract_from_raw_payload(packet):
     except Exception:
         return None, None
 
-def packet_callback(pkt):
+def packet_callback(pkt, my_ip):
     global message
     if pkt.haslayer(IP) and pkt.haslayer(UDP):
         ip = pkt[IP]
         udp = pkt[UDP]
-        if udp.sport == 123 or udp.dport == 123:
+        if (udp.sport == 123 or udp.dport == 123) != my_ip:
             hidden_bit, hidden_byte = extract_from_raw_payload(pkt)
             if hidden_bit != 0b0:
                 try:
@@ -165,7 +166,7 @@ if __name__ == '__main__':
     threading.Thread(target=input_listener, daemon=True).start()
     
     try:
-        sniff(filter="udp port 123", prn=packet_callback, store=0)
+        sniff(filter="udp port 123", prn=lambda pkt: packet_callback(pkt, my_ip), store=0)
     except KeyboardInterrupt:
         print("\n[!] STOP")
 
