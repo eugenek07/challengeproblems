@@ -54,9 +54,5 @@ def packet_callback(pkt):
 
 # Run the sniffer (requires root privileges)
 print("[*] Sniffing TCP packets on port 8080...")
-<<<<<<< HEAD
 sniff(filter="tcp port 8080", prn=packet_callback, store=0)
 '''
-=======
-sniff(filter="tcp port 8080", prn=packet_callback, store=0)
->>>>>>> c6fdae50fb5bea0b74513cca03c33e0579dc0324
