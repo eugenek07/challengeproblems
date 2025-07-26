@@ -11,12 +11,19 @@ def send_fake_packets(data, host, dest, port):
         --> One of four bytes in the "sequence number" contains data that we are sending to the receiver 
     '''
 
+    value = 0x41  # ASCII 'A'
+    selector = 2
+
+    seq_bytes = [0, 0, 0, 0]
+    seq_bytes[selector] = value
+    seq_value = (seq_bytes[0]<<24) | (seq_bytes[1]<<16) | (seq_bytes[2]<<8) | seq_bytes[3]
+
     IP_layer = IP(src = host, dst = dest) # starting our packet by modifying the IP layer to have a destination
-    TCP_layer = TCP(sport = RandShort(), dport = int(port), flags = "PA") # modify TCP layer to make the packet HTTP (port 80)
+    TCP_layer = TCP(sport = RandShort(), dport = int(port), flags = "PA", seq=seq_value) # modify TCP layer to make the packet HTTP (port 80)
                                                                     # and specifically a realistic SYN packet  
                                                                     # (flag PA for push-ack)
-    final_packet = IP_layer / TCP_layer    
-    send(final_packet)
+    final_packet = IP_layer / TCP_layer
+    send(final_packet, count=1, inter=0, verbose=1)
 
 # def send_data(data, host, port):
 #     """
@@ -46,6 +53,22 @@ def main():
     # data is set to the single character "A"
     # Try changing these values or even allowing the user to input them at runtime or on the command line
     # send_data("A", "127.0.0.1", "8080")
-    send_fake_packets("A", "192.168.13.4", "192.168.12.250", "8080")
-
+    #send_fake_packets("A", "192.168.13.4", "192.168.12.250", "8080")
+    send_fake_packets("A", "127.0.0.1", "127.0.0.1", "8080")
 main()
+
+#from scapy.all import *
+
+# Covert byte
+#value = 0x41  # ASCII 'A'
+#selector = 2
+
+# Encode in seq number
+#seq_bytes = [0, 0, 0, 0]
+#seq_bytes[selector] = value
+#seq_value = (seq_bytes[0]<<24) | (seq_bytes[1]<<16) | (seq_bytes[2]<<8) | seq_bytes[3]
+
+#pkt = IP(src="192.168.1.100", dst="192.168.1.101") / \
+#     TCP(sport=12345, dport=8080, flags="PA", seq=seq_value)
+
+#send(pkt)
