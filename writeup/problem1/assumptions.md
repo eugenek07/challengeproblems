@@ -2,4 +2,4 @@
 
 ## Assumption 2: The sender's messages are guaranteed to reach the receiver
 
-## Assumption 3: (?)
+## Assumption 3: The attacker doesn't have access to quantum computing decryption methods

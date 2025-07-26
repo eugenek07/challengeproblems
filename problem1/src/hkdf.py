@@ -30,11 +30,6 @@ def derive_keys(root):
     aes_key = aes_generator.derive(root)
     hmac_key = hmac_generator.derive(root)
 
-    # Error Checking!
-    # aes_generator.verify(root, aes_key)
-    # hmac_key.verify(root, hmac_key)
-
-    # Return Keys
     return aes_key, hmac_key
 
     
