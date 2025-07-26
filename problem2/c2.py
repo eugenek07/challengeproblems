@@ -10,6 +10,7 @@ import queue
 NTP_PAD_KEY = 0x4A
 NTP_UNIX_OFFSET = 2208988800
 message_queue = queue.Queue()
+message = ''
 
 
 # === SENDER FUNCTIONS ===
@@ -142,7 +143,7 @@ def packet_callback(pkt):
             else:
                 print(message)
                 message = ''
-                
+
 # === MAIN ===
 if __name__ == '__main__':
     if len(sys.argv) != 2:
