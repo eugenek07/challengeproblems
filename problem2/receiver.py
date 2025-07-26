@@ -50,14 +50,14 @@ def build_request(bit, byte_char):
     
     return Raw(bytes(ntp_packet))
 
-def send_ntp_request(target_ip, byte_char):
-    pkt = IP(dst=target_ip) / UDP(sport=RandShort(), dport=123) / build_request(1, byte_char)
+def send_ntp_request(target_ip, bit, byte_char):
+    pkt = IP(dst=target_ip) / UDP(sport=RandShort(), dport=123) / build_request(bit, byte_char)
     send(pkt, verbose=0)
     print(f"[+] Sent byte '{byte_char}' (0x{ord(byte_char):02x}) to {target_ip}")
     
     # Debug: show what we embedded
     byte_val = ord(byte_char) ^ NTP_PAD_KEY
-    print(f"    Embedded: bit=1, byte=0x{byte_val:02x}")
+    print(f"    Embedded: bit={bit}, byte=0x{byte_val:02x}")
 
 def sender_loop(ip):
     while True:
@@ -65,9 +65,17 @@ def sender_loop(ip):
             msg = message_queue.get()
             print(f"[*] Sending message: '{msg}'")
             for byte_char in msg:
-                send_ntp_request(ip, byte_char)
+                send_ntp_request(ip, 1, byte_char)
                 time.sleep(0.5)  # Small delay to avoid flooding
             print(f"[*] Message complete")
+
+def empty_loop(ip):
+    time.sleep(20)
+    while True:
+        time.sleep(20)
+        if message_queue.empty():
+            print(f"[*] Sending Blank Packet")
+            send_ntp_request(ip, 0, "0")
 
 def input_listener():
     while True:
@@ -90,6 +98,9 @@ if __name__ == '__main__':
     
     # Start the sender thread
     threading.Thread(target=sender_loop, args=(target_ip,), daemon=True).start()
+
+    threading.Thread(target=empty_loop, args=(target_ip,), daemon=True).start()
+
     
     # Run the input listener in main thread
     input_listener()
