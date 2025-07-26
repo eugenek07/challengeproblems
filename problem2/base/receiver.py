@@ -1,37 +1,42 @@
-import socket
+# sender.py
+from scapy.all import *
+from scapy.layers.ntp import NTP
+import sys
+import time
 
-def receive_data(host, port, buffer_size):
-    """
-    This function receives data from TCP and writes it into a buffer.
-    :param host: The host to receive data from.
-    :param port: The port to receive data from.
-    :param buffer_size: The size of the buffer to receive data into.
-    :return: The received data.
-    """
-    # Create a TCP/IP socket
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+NTP_UNIX_OFFSET = 2208988800
 
-    # Bind the socket to the host and port
-    server_address = (host, int(port))
-    sock.bind(server_address)
+def build_request():
 
-    # Listen for incoming connections
-    sock.listen(1)
+    ntp_packet = bytearray(48)
 
-    # Wait for a connection
-    connection, client_address = sock.accept() 
+    # "00" > LI, "100" > Version, "011" > Mode
+    ntp_packet[0] = int("00" + "100" + "011", 2)
 
-    try:
-        # Receive data
-        data = connection.recv(buffer_size)
-        return data
-    finally:
-        # Clean up the connection
-        connection.close()
+    current_time = time.time()
+    seconds = int(current_time) + NTP_UNIX_OFFSET
 
-def main():
-    # host variable is hardcoded to localhost (127.0.0.1), port is hardcoded to 8080, and buffer_size of 50
-    # Try changing these values or even allowing the user to input them at runtime or on the command line
-    print("Data received: " + receive_data("127.0.0.1", "8080", 50).decode("utf-8"))
+    fraction = (current_time % 1) * 2**32
 
-main()
+    ntp_layer = NTP(
+        leap = 0,
+        version =4,
+        mode = 3,
+        transmit_timestamp_secs = seconds,
+        transmit_timestamp_frac = fraction,
+    )
+    return ntp_layer
+
+def send_ntp_request(target_ip):
+
+    pkt = IP(dst=target_ip) / UDP(sport=RandShort(), dport=123) / build_request()
+    send(pkt, verbose=1)
+    print(f"NTP request sent to {target_ip}")
+
+if __name__ == '__main__':
+    if len(sys.argv) != 2:
+        print(f"Usage: sudo python3 {sys.argv[0]} <TARGET_IP>")
+        sys.exit(1)
+
+    ip = sys.argv[1]
+    send_ntp_request(ip)
