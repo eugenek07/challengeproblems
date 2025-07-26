@@ -134,7 +134,7 @@ def packet_callback(pkt, my_ip):
     if pkt.haslayer(IP) and pkt.haslayer(UDP):
         ip = pkt[IP]
         udp = pkt[UDP]
-        if (udp.sport == 123 or udp.dport == 123) != my_ip:
+        if (udp.sport == 123 or udp.dport == 123) and ip.src != my_ip:
             hidden_bit, hidden_byte = extract_from_raw_payload(pkt)
             if hidden_bit != 0b0:
                 try:
