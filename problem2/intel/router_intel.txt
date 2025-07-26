@@ -1,0 +1,98 @@
+[INTEL COLLECTED FROM TARGET]
+
+set interfaces ethernet eth0 address '192.168.3.0/24'
+set interfaces ethernet eth0 description 'LAN Interface'
+set interfaces ethernet eth1 address '172.16.50.0/24'
+set interfaces ethernet eth1 description 'DMZ Interface'
+set interfaces ethernet eth2 address '10.0.80.0/24'
+set interfaces ethernet eth2 description 'WAN Interface'
+
+
+set service dhcp-server shared-network-name LAN subnet 192.168.3.0/24 default-router 192.168.3.1
+set service dhcp-server shared-network-name LAN subnet 192.168.3.0/24 name-server 192.168.3.1
+set service dhcp-server shared-network-name LAN subnet 192.168.3.0/24 domain-name 'icorp.internal'
+
+set service dns forwarding allow-from 192.168.3.0/24
+set service dns forwarding cache-size 0
+set service dns forwarding listen-on 'eth0'
+set service dns forwarding options 'all-servers'
+
+set system ntp server pool.ntp.org
+
+set firewall name LAN default-action 'drop'
+set firewall name LAN rule 10 action 'accept'
+set firewall name LAN rule 10 description 'Allow DHCP'
+set firewall name LAN rule 10 protocol 'udp'
+set firewall name LAN rule 10 destination port '67'
+set firewall name LAN rule 20 action 'accept'
+set firewall name LAN rule 20 description 'Allow DNS'
+set firewall name LAN rule 20 protocol 'udp'
+set firewall name LAN rule 20 destination port '53'
+set firewall name LAN rule 30 action 'accept'
+set firewall name LAN rule 30 description 'Allow NTP'
+set firewall name LAN rule 30 protocol 'udp'
+set firewall name LAN rule 30 destination port '123'
+set firewall name LAN rule 40 action 'accept'
+set firewall name LAN rule 40 description 'Allow SSH'
+set firewall name LAN rule 40 protocol 'tcp'
+set firewall name LAN rule 40 destination port '22'
+set firewall name LAN rule 50 action 'accept'
+set firewall name LAN rule 50 description 'Allow HTTPS'
+set firewall name LAN rule 50 protocol 'tcp'
+set firewall name LAN rule 50 destination port '443'
+set firewall name LAN rule 60 action 'accept'
+set firewall name LAN rule 60 description 'Allow HTTP to proxy'
+set firewall name LAN rule 60 protocol 'tcp'
+set firewall name LAN rule 60 destination address '192.168.3.201' # Proxy server address
+set firewall name LAN rule 60 destination port '80'
+set firewall name LAN rule 70 action 'accept'
+set firewall name LAN rule 70 description 'Allow ICMP'
+set firewall name LAN rule 70 protocol 'icmp'
+set firewall name LAN rule 80 action 'accept'
+set firewall name LAN rule 80 description 'Allow established connections'
+set firewall name LAN rule 80 state established 'enable'
+set firewall name LAN rule 80 state related 'enable'
+
+set firewall name DMZ default-action 'drop'
+set firewall name DMZ rule 10 action 'accept'
+set firewall name DMZ description 'Allow HTTP from proxy'
+set firewall name DMZ rule 10 protocol 'tcp'
+set firewall name DMZ rule 10 source address '192.168.3.201' # Proxy server address
+set firewall name DMZ rule 10 destination port '80'
+set firewall name DMZ rule 20 action 'accept'
+set firewall name DMZ description 'Allow HTTPS'
+set firewall name DMZ rule 20 protocol 'tcp'
+set firewall name DMZ rule 20 destination port '443'
+
+set firewall name WAN default-action 'drop'
+set firewall name WAN rule 10 action 'accept'
+set firewall name WAN rule 10 description 'Allow web traffic during working hours'
+set firewall name WAN rule 10 protocol 'tcp'
+set firewall name WAN rule 10 destination port '80'
+set firewall name WAN rule 10 destination port '443'
+
+
+set firewall name WAN rule 10 time starttime '08:00:00'
+set firewall name WAN rule 10 time stoptime '17:00:00'
+set firewall name WAN rule 10 time weekdays Mon,Tue,Wed,Thu,Fri
+
+
+set protocols static route 0.0.0.0/0 next-hop <external gateway IP>
+
+set nat source rule 10 outbound-interface 'eth2'	
+set nat source rule 10 source address '192.168.3.0/24'
+set nat source rule 10 translation address 'masquerade'
+
+set nat source rule 20 outbound-interface 'eth2'	
+set nat source rule 20 source address '172.16.50.0/24'
+set nat source rule 20 translation address 'masquerade'
+
+
+set system syslog global facility level 'notice'
+set system syslog global facility protocols level 'debug'
+set system syslog global facility firewall level 'info'
+set system syslog global archive size '512'
+set system syslog file '/var/log/vyos.log'
+
+
+[VyOS v1.3 Equuleus] 
