@@ -42,14 +42,16 @@ def packet_callback(pkt):
         udp = pkt[UDP]
         if udp.sport == 123 or udp.dport == 123:
             hidden_bit, hidden_byte = extract_from_raw_payload(pkt)
-            if hidden_bit is not None:
+            if hidden_bit != 0b0:
                 try:
                     hidden_char = chr(hidden_byte) if 32 <= hidden_byte <= 126 else '.'
                     message += hidden_char
                 except Exception:
                     hidden_char = '?'
+                print({hidden_bit})
                 print(f"Hidden byte: {hidden_byte} ('{hidden_char}')")
-            print("-" * 60)
+                print("-" * 60)
+
 
 # === MAIN ===
 print("[*] Listening for NTP packets on port 123...\n")
