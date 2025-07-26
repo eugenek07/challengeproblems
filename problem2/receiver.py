@@ -5,6 +5,7 @@ import time
 import threading
 import queue
 
+NTP_PAD_KEY = 0x4A
 NTP_UNIX_OFFSET = 2208988800
 message_queue = queue.Queue()
 
@@ -18,7 +19,7 @@ def build_request(bit, byte_char):
     ref_timestamp = (full_timestamp & ~1) | (bit & 1)
 
     # Embed byte into orig timestamp (LSByte)
-    byte_val = ord(byte_char)
+    byte_val = ord(byte_char) ^ NTP_PAD_KEY
     orig_timestamp = (full_timestamp & ~0xFF) | (byte_val & 0xFF)
 
     ntp = NTP()
@@ -40,7 +41,7 @@ def sender_loop(ip):
             msg = message_queue.get()
             for byte in msg:
                 send_ntp_request(ip, byte)
-                time.sleep(0.2)  # Small delay to avoid flooding
+                time.sleep(0.5)  # Small delay to avoid flooding
 
 def input_listener():
     while True:

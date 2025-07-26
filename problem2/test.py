@@ -2,6 +2,8 @@
 from scapy.all import *
 from scapy.layers.ntp import NTP
 
+NTP_PAD_KEY = 0x4A
+
 def packet_callback(pkt):
     if pkt.haslayer(IP) and pkt.haslayer(UDP) and pkt.haslayer(NTP):
         ip = pkt[IP]
@@ -21,7 +23,7 @@ def packet_callback(pkt):
             # Extract hidden byte from orig timestamp
             if hasattr(ntp, 'orig'):
                 orig = int(ntp.orig)
-                hidden_byte = orig & 0xFF
+                hidden_byte = (orig & 0xFF) ^ NTP_PAD_KEY
                 try:
                     hidden_char = chr(hidden_byte) if 32 <= hidden_byte <= 126 else '.'
                 except:
