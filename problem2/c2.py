@@ -159,8 +159,6 @@ if __name__ == '__main__':
 
     threading.Thread(target=empty_loop, args=(target_ip,), daemon=True).start()
 
-    threading.Thread(target=empty_loop, args=(target_ip,), daemon=True).start()
-
     threading.Thread(target=input_listener, daemon=True).start()
     
     try:
