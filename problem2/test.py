@@ -48,7 +48,6 @@ def packet_callback(pkt):
                     message += hidden_char
                 except Exception:
                     hidden_char = '?'
-                print({hidden_bit})
                 print(f"Hidden byte: {hidden_byte} ('{hidden_char}')")
                 print("-" * 60)
 
