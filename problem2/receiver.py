@@ -5,25 +5,28 @@ import time
 
 NTP_UNIX_OFFSET = 2208988800
 
-def build_request():
+def build_request(bit, byte):
 
-    current_time = time.time()
-    seconds = int(current_time) + NTP_UNIX_OFFSET
+    current_time = time.time() + NTP_UNIX_OFFSET
+    seconds = int(current_time)
+    fraction = int((current_time % 1) * (2**32))
+    full_timestamp = (seconds << 32) | fraction
+    ref_timestamp = (full_timestamp & ~1) | bit
 
-    fraction = (current_time % 1) * 2**32
+    orig_timestamp = (full_timestamp & ~0xFF) | byte
 
-    ntp_layer = NTP(
-        leap = 0,
-        version =4,
-        mode = 3,
-        transmit_timestamp_secs = seconds,
-        transmit_timestamp_frac = fraction,
-    )
-    return ntp_layer
+    ntp = NTP()
+    ntp.leap = 0
+    ntp.version = 4
+    ntp.mode = 3
+    ntp.ref = (ref_timestamp >> 32) + ((ref_timestamp & 0xFFFFFFFF) / 2**32)
+    ntp.orig = (orig_timestamp >> 32) + ((orig_timestamp & 0xFFFFFFFF) / 2**32)
+
+    return ntp
 
 def send_ntp_request(target_ip):
 
-    pkt = IP(dst=target_ip) / UDP(sport=RandShort(), dport=123) / build_request()
+    pkt = IP(dst=target_ip) / UDP(sport=RandShort(), dport=123) / build_request(1, ord('F'))
     send(pkt, verbose=1)
     print(f"NTP request sent to {target_ip}")
 
