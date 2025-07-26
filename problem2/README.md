@@ -11,7 +11,7 @@ Run ```python3 payload.py``` from the LAN machine on the target network
 Once running, the c2.py will send an NTP request to the LAN machine once every 64 seconds. 
     - No message being sent: ```ReferenceField[31] = 0```
 Payload.py on the LAN machine responds once every time it gets the request.
-    - No message being sent: '''RootDelay[31] = 0 ```
+    - No message being sent: ```RootDelay[31] = 0 ```
 
 ## Message from C2 -> LAN
 Type a message onto terminal of the running process of c2.py:
