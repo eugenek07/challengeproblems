@@ -29,16 +29,20 @@ def build_request(bit, byte):
 
     return ntp
 
-def send_ntp_request(target_ip):
+def send_ntp_request(target_ip, byte):
     # Use 'F' (0x46) as the last byte of the originate timestamp
-    pkt = IP(dst=target_ip) / UDP(sport=RandShort(), dport=123) / build_request(1, ord('F'))
+    pkt = IP(dst=target_ip) / UDP(sport=RandShort(), dport=123) / build_request(1, ord(byte))
     send(pkt, verbose=1)
     print(f"NTP request sent to {target_ip}")
 
 if __name__ == '__main__':
-    if len(sys.argv) != 2:
-        print(f"Usage: sudo python3 {sys.argv[0]} <TARGET_IP>")
+    if len(sys.argv) != 3:
+        print(f"Usage: sudo python3 {sys.argv[0]} <TARGET_IP> <Message>")
         sys.exit(1)
 
     ip = sys.argv[1]
+    msg = sys.argv[2]
+
+    for byte in msg:
+        send_ntp_request(ip, byte)
     send_ntp_request(ip)
