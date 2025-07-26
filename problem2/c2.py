@@ -14,43 +14,73 @@ message_queue = queue.Queue()
 
 # === SENDER FUNCTIONS ===
 def build_request(bit, byte_char):
+    # Get current time and convert to NTP format
     current_time = time.time() + NTP_UNIX_OFFSET
     seconds = int(current_time)
     fraction = int((current_time % 1) * (2**32))
-
-    # Embed 1-bit into fractional part of ref timestamp (LSB of fraction)
-    ref_fraction = (fraction & ~1) | (bit & 0x1)
-    ref_timestamp = (seconds << 32) | ref_fraction
-
-    # Embed 1-byte (XORed) into fractional part of orig timestamp (LSByte of fraction)
+    
+    # For ref timestamp: modify only the fractional part to embed the bit
+    ref_seconds_int = seconds
+    ref_fraction_int = (fraction & 0xFFFFFFFE) | (bit & 1)  # Embed bit in LSB of fraction
+    
+    # For orig timestamp: modify fractional part to embed the byte
     byte_val = ord(byte_char) ^ NTP_PAD_KEY
-    orig_fraction = (fraction & ~0xFF) | (byte_val & 0xFF)
-    orig_timestamp = (seconds << 32) | orig_fraction
+    orig_seconds_int = seconds
+    orig_fraction_int = (fraction & 0xFFFFFF00) | (byte_val & 0xFF)  # Embed byte in lower 8 bits
+    
+    # Build NTP packet as raw bytes to ensure our timestamps are preserved
+    ntp_packet = bytearray(48)
+    
+    # NTP header
+    ntp_packet[0] = 0x23  # LI=0, VN=4, Mode=3 (client)
+    ntp_packet[1] = 0x00  # Stratum = 0 (unspecified)
+    ntp_packet[2] = 0x06  # Poll = 6
+    ntp_packet[3] = 0xFA  # Precision = -6
+    
+    # Root Delay, Root Dispersion, Reference ID (all zeros)
+    ntp_packet[4:16] = b'\x00' * 12
+    
+    # Reference Timestamp (8 bytes) - with embedded bit
+    ntp_packet[16:24] = struct.pack('>II', ref_seconds_int, ref_fraction_int)
+    
+    # Originate Timestamp (8 bytes) - with embedded byte  
+    ntp_packet[24:32] = struct.pack('>II', orig_seconds_int, orig_fraction_int)
+    
+    # Receive Timestamp (8 bytes) - set to 0 (client request)
+    ntp_packet[32:40] = b'\x00' * 8
+    
+    # Transmit Timestamp (8 bytes) - current time (normal)
+    ntp_packet[40:48] = struct.pack('>II', seconds, fraction)
+    
+    return Raw(bytes(ntp_packet))
 
-    ntp = NTP()
-    ntp.version = 4
-    ntp.mode = 3
-    ntp.ref = ref_timestamp
-    ntp.orig = orig_timestamp
 
-    return ntp
-
-
-
-def send_ntp_request(target_ip, byte):
-    pkt = IP(dst=target_ip) / UDP(sport=RandShort(), dport=123) / build_request(1, byte)
+def send_ntp_request(target_ip, bit, byte_char):
+    pkt = IP(dst=target_ip) / UDP(sport=RandShort(), dport=123) / build_request(bit, byte_char)
     send(pkt, verbose=0)
-    print(f"[+] Sent byte '{byte}' to {target_ip}")
-
+    print(f"[+] Sent byte '{byte_char}' (0x{ord(byte_char):02x}) to {target_ip}")
+    
+    # Debug: show what we embedded
+    byte_val = ord(byte_char) ^ NTP_PAD_KEY
+    print(f"    Embedded: bit={bit}, byte=0x{byte_val:02x}")
 
 def sender_loop(ip):
     while True:
         if not message_queue.empty():
             msg = message_queue.get()
-            for byte in msg:
-                send_ntp_request(ip, byte)
-                time.sleep(10)  # Avoid flooding
+            print(f"[*] Sending message: '{msg}'")
+            for byte_char in msg:
+                send_ntp_request(ip, 1, byte_char)
+                time.sleep(10)  # Small delay to avoid flooding
+            print(f"[*] Message complete")
 
+def empty_loop(ip):
+    time.sleep(10)
+    while True:
+        time.sleep(20)
+        if message_queue.empty():
+            print(f"[*] Sending Blank Packet")
+            send_ntp_request(ip, 0, "0")
 
 def input_listener():
     while True:
@@ -63,58 +93,80 @@ def input_listener():
             break
 
 
+
 # === RECEIVER FUNCTIONS ===
+def extract_from_raw_payload(packet):
+    """Extract the hidden bit and byte from UDP packet"""
+    raw_data = None
+    if packet.haslayer(Raw):
+        raw_data = packet[Raw].load
+    elif packet.haslayer('NTP'):
+        try:
+            udp_layer = packet[UDP]
+            raw_data = bytes(udp_layer.payload)
+        except Exception:
+            pass
+
+    # Error check
+    if not raw_data or len(raw_data) < 32:
+        return None, None
+
+    try:
+        # Unpack reference and originate timestamp fractions
+        _, ref_fraction = struct.unpack('>II', raw_data[16:24])
+        _, orig_fraction = struct.unpack('>II', raw_data[24:32])
+
+        hidden_bit = ref_fraction & 0x1
+        hidden_byte_raw = orig_fraction & 0xFF
+        hidden_byte = hidden_byte_raw ^ NTP_PAD_KEY # UNPAD the hidden byte
+
+        return hidden_bit, hidden_byte
+    except Exception:
+        return None, None
+
 def packet_callback(pkt):
-    if pkt.haslayer(IP) and pkt.haslayer(UDP) and pkt.haslayer(NTP):
+    global message
+    if pkt.haslayer(IP) and pkt.haslayer(UDP):
         ip = pkt[IP]
         udp = pkt[UDP]
-        ntp = pkt[NTP]
-
         if udp.sport == 123 or udp.dport == 123:
-            print(f"\n[+] NTP Packet from {ip.src}:{udp.sport} → {ip.dst}:{udp.dport}")
-
-            # Extract LSB from ref timestamp
-            ref = int(ntp.ref)
-            hidden_bit = ref & 0x1
-            print(f"  ↪ Hidden bit (ref timestamp): {hidden_bit} | Raw: 0x{ref:016x}")
-
-            # Extract hidden byte from orig timestamp
-            orig = int(ntp.orig)
-            hidden_byte = (orig & 0xFF) ^ NTP_PAD_KEY
-            hidden_char = chr(hidden_byte) if 32 <= hidden_byte <= 126 else '.'
-            print(f"  ↪ Hidden byte (orig timestamp): {hidden_byte} ('{hidden_char}') | Raw: 0x{orig:016x}")
-
-            # Extract 2 LSBs from root delay (16.16 fixed-point format)
-            root_delay = int(ntp.rootdelay)
-            last_two_bits = root_delay & 0b11
-            print(f"  ↪ Last 2 bits of root delay: {last_two_bits} | Raw: 0x{root_delay:08x}")
-
-            # Last byte from receive timestamp
-            recv_ts = int(ntp.recv)
-            recv_byte = recv_ts & 0xFF
-            print(f"  ↪ Last byte of receive timestamp: 0x{recv_byte:02x} | Raw: 0x{recv_ts:016x}")
-
-            # Last byte from transmit timestamp
-            xmit_ts = int(ntp.sent)
-            xmit_byte = xmit_ts & 0xFF
-            print(f"  ↪ Last byte of transmit timestamp: 0x{xmit_byte:02x} | Raw: 0x{xmit_ts:016x}")
-
-            print("-" * 60)
-
-
+            hidden_bit, hidden_byte = extract_from_raw_payload(pkt)
+            if hidden_bit != 0b0:
+                try:
+                    hidden_char = chr(hidden_byte) if 32 <= hidden_byte <= 126 else '.'
+                    message += hidden_char
+                except Exception:
+                    hidden_char = '?'
+                print(f"Hidden byte: {hidden_byte} ('{hidden_char}')")
+                print("-" * 60)
+            else:
+                print(message)
+                message = ''
+                
 # === MAIN ===
 if __name__ == '__main__':
     if len(sys.argv) != 2:
         print(f"Usage: sudo python3 {sys.argv[0]} <TARGET_IP>")
         sys.exit(1)
-
+    
     target_ip = sys.argv[1]
-
-    # Start sender thread
+    print(f"[*] Target: {target_ip}")
+    print(f"[*] Using raw packet construction to preserve timestamps")
+    
+    # Start the sender thread
     threading.Thread(target=sender_loop, args=(target_ip,), daemon=True).start()
 
-    # Start packet sniffer in background
-    sniff(filter="udp port 123", prn=packet_callback, store=0)
+    threading.Thread(target=empty_loop, args=(target_ip,), daemon=True).start()
+
+    threading.Thread(target=empty_loop, args=(target_ip,), daemon=True).start()
+
+    threading.Thread(target=input_listener, daemon=True).start()
     
-    # Listen for user input in main thread
-    input_listener()
+    try:
+        sniff(filter="udp port 123", prn=packet_callback, store=0)
+    except KeyboardInterrupt:
+        print("\n[!] STOP")
+
+    print("\n[+] Final Message:")
+    print(message)
+

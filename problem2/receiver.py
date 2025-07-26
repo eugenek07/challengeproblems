@@ -66,11 +66,11 @@ def sender_loop(ip):
             print(f"[*] Sending message: '{msg}'")
             for byte_char in msg:
                 send_ntp_request(ip, 1, byte_char)
-                time.sleep(0.5)  # Small delay to avoid flooding
+                time.sleep(10)  # Small delay to avoid flooding
             print(f"[*] Message complete")
 
 def empty_loop(ip):
-    time.sleep(20)
+    time.sleep(10)
     while True:
         time.sleep(20)
         if message_queue.empty():
@@ -86,6 +86,8 @@ def input_listener():
         except KeyboardInterrupt:
             print("\n[!] Exiting...")
             break
+
+
 
 if __name__ == '__main__':
     if len(sys.argv) != 2:

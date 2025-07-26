@@ -50,6 +50,9 @@ def packet_callback(pkt):
                     hidden_char = '?'
                 print(f"Hidden byte: {hidden_byte} ('{hidden_char}')")
                 print("-" * 60)
+            else:
+                print(message)
+                message = ''
 
 
 # === MAIN ===
