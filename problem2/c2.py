@@ -146,7 +146,6 @@ def packet_callback(pkt, my_ip):
                 print("-" * 60)
             else:
                 print(message)
-                message = ''
 
 # === MAIN ===
 if __name__ == '__main__':
