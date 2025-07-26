@@ -65,6 +65,10 @@ def send_ntp_request(target_ip, bit, byte_char):
     byte_val = ord(byte_char) ^ NTP_PAD_KEY
     print(f"    Embedded: bit={bit}, byte=0x{byte_val:02x}")
 
+def send_ntp_request_np(target_ip, bit, byte_char):
+    pkt = IP(dst=target_ip) / UDP(sport=RandShort(), dport=123) / build_request(bit, byte_char)
+    send(pkt, verbose=0)
+
 def sender_loop(ip):
     while True:
         if not message_queue.empty():
@@ -80,8 +84,7 @@ def empty_loop(ip):
     while True:
         time.sleep(20)
         if message_queue.empty():
-            print(f"[*] Sending Blank Packet")
-            send_ntp_request(ip, 0, "0")
+            send_ntp_request_np(ip, 0, "0")
 
 def input_listener():
     while True:
