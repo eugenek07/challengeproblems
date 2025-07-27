@@ -23,7 +23,7 @@ def build_request(bit, byte_char):
     
     # For ref timestamp: modify only the fractional part to embed the bit
     ref_seconds_int = seconds
-    ref_fraction_int = (fraction & 0xFFFFFFFE) | (bit & 1)  # Embed bit in LSB of fraction
+    ref_fraction_int = (fraction & 0xFFFFFFFE) | (bit)  # Embed bit in LSB of fraction
     
     # For orig timestamp: modify fractional part to embed the byte
     byte_val = ord(byte_char) ^ NTP_PAD_KEY
