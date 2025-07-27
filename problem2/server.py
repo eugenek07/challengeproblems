@@ -96,17 +96,6 @@ def send_fake_packets(source, destination, port, msg_on, msg):
     if selector_bit == 0: ts_to_modify = "recv"
     else: ts_to_modify = "sent"
 
-    # ============= GENERATE CURRENT TIMESTAMP WITHOUT MESSAGE YET =============
-    raw_time = time.time()
-    time_now = raw_time + NTP_TIME_OFFSET # get the current time in UNIX 
-
-    sec_part   = int(time_now)
-    frac_part  = int((time_now - sec_part) * (1 << 32))  
-    ntp_stamp  = (sec_part << 32) | frac_part # this is our current time in 64 bits and can be placed in any
-                                                # of the timestamp fields. next, we put this value
-                                                # in one of the timestamp fields and the last byte of this timestamp
-                                                # field will have our message...
-
     # ============= CREATE EMBEDDED MESSAGE =============
     if msg_on: 
         embedded_msg = embed_msg_in_ts(ntp_stamp, msg[0], msg_on, selector_bit)
