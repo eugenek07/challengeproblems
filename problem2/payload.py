@@ -12,6 +12,7 @@ my_ip = get_if_addr(conf.iface)
 def create_root_delay(msg_on, selector): 
     '''
         args: 
+        
             - msg_on: whether we are actually sending a message or not
             - selector: which timestamp to use if the message is on
         return: The new root delay with the first two bits modified.
@@ -67,7 +68,7 @@ def embed_msg_in_ts(timestamp, msg, msg_on, selector):
     ref_fraction_int = fraction  # Embed bit in LSB of fraction
     
     # For orig timestamp: modify fractional part to embed the byte
-    byte_val = ord(msg) ^ NTP_PAD_KEY
+    byte_val = msg ^ NTP_PAD_KEY
     orig_seconds_int = seconds
     orig_fraction_int = (fraction & 0xFFFFFF00) | (byte_val & 0xFF)  # Embed byte in lower 8 bits
     
@@ -81,7 +82,7 @@ def embed_msg_in_ts(timestamp, msg, msg_on, selector):
     ntp_packet[3] = 0xFA  # Precision = -6
     
     # Root Delay, Root Dispersion, Reference ID (all zeros)
-    ntp_packet[4:8] = create_root_delay()
+    ntp_packet[4:8] = struct.pack('>I', create_root_delay(msg_on, selector))
     
     # Reference Timestamp (8 bytes) - with embedded bit
     ntp_packet[16:24] = struct.pack('>II', ref_seconds_int, ref_fraction_int)
