@@ -70,7 +70,7 @@ def embed_msg_in_ts(timestamp, msg, msg_on, selector):
     ntp_packet = bytearray(48)
     
     # NTP header
-    ntp_packet[0] = 0x23  # LI=0, VN=4, Mode=3 (client)
+    ntp_packet[0] = 0x24  # LI=0, VN=4, Mode=4 (server)
     ntp_packet[1] = 0x00  # Stratum = 0 (unspecified)
     ntp_packet[2] = 0x06  # Poll = 6
     ntp_packet[3] = 0xFA  # Precision = -6
