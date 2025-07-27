@@ -10,31 +10,14 @@ message = "" # this is the final message that the other person has sent me
 my_ip = get_if_addr(conf.iface)
 
 def create_root_delay(msg_on, selector): 
-    '''
-        args: 
-        
-            - msg_on: whether we are actually sending a message or not
-            - selector: which timestamp to use if the message is on
-        return: The new root delay with the first two bits modified.
-        This function takes a root delay value and makes the first bit represent whether a message is in the 
-        packet and the second bit represent which timestamp attribute the message is in.
-    '''
-    base_delay = 0x00010200 # start with 0x00010200 for the "root delay" value because most delays are between 0.5 & 1ms
-                            # so 1.01 ms seems believable
-
-    # first, we zero out the last two bits
-    #   0x FF FF FF FC    (C = 1100)
-    # | 0x 00 01 02 00
-    # = 0x 00 01 02 00
-    base_delay = base_delay | 0xFFFFFFFC
-
-    # second, we need to make the first bit have the value of msg_on
-    base_delay = base_delay | msg_on
-
-    # third, we need to make the second bit have the value of the selector
-    base_delay = base_delay | selector << 1 
-
-    # third, we place the two bit selector and msg_on at the end of the base_delay and return it
+    base_delay = 0x00010200  # believable root delay
+    
+    # Clear last two bits (bits 0 and 1)
+    base_delay = base_delay & 0xFFFFFFFC
+    
+    # Set bit 0 to msg_on, bit 1 to selector
+    base_delay = base_delay | (msg_on & 0x1) | ((selector & 0x1) << 1)
+    
     return base_delay
 
 def embed_msg_in_ts(timestamp, msg, msg_on, selector):
@@ -73,7 +56,7 @@ def embed_msg_in_ts(timestamp, msg, msg_on, selector):
     trans_seconds_int = seconds
     
     byte_val = ord(msg) ^ NTP_PAD_KEY
-    
+
     if selector == 1:
         # Embed in Receive Timestamp
         recv_fraction_int = (fraction & 0xFFFFFF00) | (byte_val & 0xFF)
@@ -143,7 +126,7 @@ def send_fake_packets(source, destination, port, msg_on, msg):
 
     # ============= CREATE EMBEDDED MESSAGE =============
     if msg_on: 
-        embedded_msg = embed_msg_in_ts(ntp_stamp, ord(msg[0]), msg_on, selector_bit)
+        embedded_msg = embed_msg_in_ts(ntp_stamp, msg[0], msg_on, selector_bit)
     else: 
         embedded_msg = ntp_stamp
 
