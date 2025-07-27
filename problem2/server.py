@@ -119,11 +119,7 @@ def send_fake_packets(source, destination, port, msg_on, msg):
     # ============= CREATE/SEND FINAL PACKET =============
     transport_layer = UDP(sport = port, dport = port)
     network_layer = IP(src = source, dst = destination)
-    # application_layer = NTP(leap = 0, version = 4, mode = 3, delay = root_delay)
-    # if ts_to_modify == "recv":
-    #     application_layer.recv = embedded_msg
-    # else:
-    #     application_layer.sent = embedded_msg
+
     ntp_packet = network_layer / transport_layer / embedded_msg
     send(ntp_packet)
 
