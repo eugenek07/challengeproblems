@@ -83,7 +83,7 @@ def sender_loop(ip):
 def empty_loop(ip):
     time.sleep(10)
     while True:
-        time.sleep(20)
+        time.sleep(10)
         if message_queue.empty():
             send_ntp_request_np(ip, 0, "0")
 
@@ -100,8 +100,8 @@ def input_listener():
 
 
 # === RECEIVER FUNCTIONS ===
-def extract_from_raw_payload(packet):
-    """Extract the hidden bit and byte from UDP packet"""
+def extract_control_bits_and_byte(packet):
+    """Extract control bits from Root Delay and the hidden byte from the chosen timestamp."""
     raw_data = None
     if packet.haslayer(Raw):
         raw_data = packet[Raw].load
@@ -112,22 +112,28 @@ def extract_from_raw_payload(packet):
         except Exception:
             pass
 
-    # Error check
-    if not raw_data or len(raw_data) < 32:
+    if not raw_data or len(raw_data) < 48:
         return None, None
 
     try:
-        # Unpack reference and originate timestamp fractions
-        _, ref_fraction = struct.unpack('>II', raw_data[16:24])
-        _, orig_fraction = struct.unpack('>II', raw_data[24:32])
+        # --- Control Bits from Root Delay ---
+        root_delay = struct.unpack(">I", raw_data[4:8])[0]
+        has_message = (root_delay >> 31) & 0x1
+        use_receive = (root_delay >> 30) & 0x1
 
-        hidden_bit = ref_fraction & 0x1
-        hidden_byte_raw = orig_fraction & 0xFF
-        hidden_byte = hidden_byte_raw ^ NTP_PAD_KEY # UNPAD the hidden byte
+        if not has_message:
+            return 0, None  # Signal no message
 
-        return hidden_bit, hidden_byte
+        # --- Select which timestamp to extract from ---
+        offset = 32 if use_receive else 40  # Receive or Transmit Timestamp
+        _, timestamp_fraction = struct.unpack('>II', raw_data[offset:offset+8])
+        hidden_byte_raw = timestamp_fraction & 0xFF
+        hidden_byte = hidden_byte_raw ^ NTP_PAD_KEY  # Unpad the byte
+
+        return 1, hidden_byte
     except Exception:
         return None, None
+
 
 def packet_callback(pkt, my_ip):
     global message
@@ -135,8 +141,8 @@ def packet_callback(pkt, my_ip):
         ip = pkt[IP]
         udp = pkt[UDP]
         if (udp.sport == 123 or udp.dport == 123) and ip.src != my_ip:
-            hidden_bit, hidden_byte = extract_from_raw_payload(pkt)
-            if hidden_bit != 0b0:
+            has_msg, hidden_byte = extract_control_bits_and_byte(pkt)
+            if has_msg:
                 try:
                     hidden_char = chr(hidden_byte) if 32 <= hidden_byte <= 126 else '.'
                     message += hidden_char
@@ -145,7 +151,15 @@ def packet_callback(pkt, my_ip):
                 print(f"Hidden byte: {hidden_byte} ('{hidden_char}')")
                 print("-" * 60)
             else:
-                print(message)
+                # End-of-message signal
+                if message:
+                    print(f"[+] Final message received: {message}")
+                    if not message_queue.empty():
+                        next_char = message_queue.get()
+                        print(f"[*] Sending queued byte back: '{next_char}'")
+                        send_ntp_request(ip.src, 1, next_char)
+                        time.sleep(0.5)
+                    message = ''
 
 # === MAIN ===
 if __name__ == '__main__':
