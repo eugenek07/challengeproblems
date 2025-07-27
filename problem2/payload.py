@@ -58,19 +58,30 @@ def embed_msg_in_ts(timestamp, msg, msg_on, selector):
     # # = __ __ __ __ __ __ __ __ msg
     # timestamp = timestamp | (msg ^ NTP_PAD_KEY)
 
-  # Get current time and convert to NTP format
     current_time = time.time() + NTP_UNIX_OFFSET
     seconds = int(current_time)
     fraction = int((current_time % 1) * (2**32))
     
-    # For ref timestamp: modify only the fractional part to embed the bit
+    # Prepare timestamps
     ref_seconds_int = seconds
-    ref_fraction_int = fraction  # Embed bit in LSB of fraction
+    ref_fraction_int = fraction  # or could embed bit if needed
     
-    # For orig timestamp: modify fractional part to embed the byte
-    byte_val = msg ^ NTP_PAD_KEY
     orig_seconds_int = seconds
-    orig_fraction_int = (fraction & 0xFFFFFF00) | (byte_val & 0xFF)  # Embed byte in lower 8 bits
+    orig_fraction_int = fraction  # keep originate timestamp normal
+    
+    recv_seconds_int = seconds
+    trans_seconds_int = seconds
+    
+    byte_val = ord(msg) ^ NTP_PAD_KEY
+    
+    if selector == 1:
+        # Embed in Receive Timestamp
+        recv_fraction_int = (fraction & 0xFFFFFF00) | (byte_val & 0xFF)
+        trans_fraction_int = fraction  # normal
+    else:
+        # Embed in Transmit Timestamp
+        recv_fraction_int = fraction  # normal
+        trans_fraction_int = (fraction & 0xFFFFFF00) | (byte_val & 0xFF)
     
     # Build NTP packet as raw bytes to ensure our timestamps are preserved
     ntp_packet = bytearray(48)
@@ -90,11 +101,11 @@ def embed_msg_in_ts(timestamp, msg, msg_on, selector):
     # Originate Timestamp (8 bytes) - with embedded byte  
     ntp_packet[24:32] = struct.pack('>II', orig_seconds_int, orig_fraction_int)
     
-    # Receive Timestamp (8 bytes) - set to 0 (client request)
-    ntp_packet[32:40] = b'\x00' * 8
+    # Receive Timestamp (may have embedded byte)
+    ntp_packet[32:40] = struct.pack('>II', recv_seconds_int, recv_fraction_int)
     
-    # Transmit Timestamp (8 bytes) - current time (normal)
-    ntp_packet[40:48] = struct.pack('>II', seconds, fraction)
+    # Transmit Timestamp (may have embedded byte)
+    ntp_packet[40:48] = struct.pack('>II', trans_seconds_int, trans_fraction_int)
 
     return Raw(bytes(ntp_packet))
 
