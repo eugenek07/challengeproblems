@@ -45,13 +45,6 @@ def embed_msg_in_ts(timestamp, msg, msg_on, selector):
     seconds = int(current_time)
     fraction = int((current_time % 1) * (2**32))
     
-    # Prepare timestamps
-    ref_seconds_int = seconds
-    ref_fraction_int = fraction  # or could embed bit if needed
-    
-    orig_seconds_int = seconds
-    orig_fraction_int = fraction  # keep originate timestamp normal
-    
     recv_seconds_int = seconds
     trans_seconds_int = seconds
     
@@ -82,10 +75,10 @@ def embed_msg_in_ts(timestamp, msg, msg_on, selector):
     ntp_packet[8:16] = b'\x00' * 12
     
     # Reference Timestamp (8 bytes) 
-    ntp_packet[16:24] = struct.pack('>II', ref_seconds_int, ref_fraction_int)
+    ntp_packet[40:48] = struct.pack('>II', seconds, fraction)
     
     # Originate Timestamp (8 bytes)
-    ntp_packet[24:32] = struct.pack('>II', orig_seconds_int, orig_fraction_int)
+    ntp_packet[40:48] = struct.pack('>II', seconds, fraction)
     
     # Receive Timestamp (may have embedded byte)
     ntp_packet[32:40] = struct.pack('>II', recv_seconds_int, recv_fraction_int)
