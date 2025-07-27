@@ -8,19 +8,19 @@ In order to receive information to and from the C2 and LAN, the connection is mo
 
 ## Begin Covert Comms
 
-- Run `python3 c2.py` from the **C2 machine**  
-- Run `python3 payload.py` from the **LAN machine** on the target network
+- Run `python3 client.py` from the **LAN machine**  
+- Run `python3 server.py` from the **C2 machine** on the target network
 
 ---
 
 ## No Messages / Only NTP Request and Response
 
-Once running, `payload.py` sends an NTP request to the C2 every 64 seconds.
+Once running, `client.py` sends an NTP request to the C2 every 64 seconds.
 
 - **No message being sent:**  
   ```ReferenceField[31] = 0```
 
-`c2.py` on the C2 machine responds each time it receives a request.
+`server.py` on the C2 machine responds each time it receives a request.
 
 - **No message being sent:**  
   ```RootDelay[31] = 0```
@@ -28,9 +28,9 @@ Once running, `payload.py` sends an NTP request to the C2 every 64 seconds.
 The '0' bit indicates that no message is currently being sent.
 ---
 
-## Message from LAN → C2
+## Message from C2 → LAN
 
-Type a message in the terminal running `payload.py`:
+Type a message in the terminal running `client.py`:
 
 ```
 I love ACE!
@@ -43,19 +43,19 @@ It gets stored in the payload’s personal **queue**, ordered into bytes (Last I
 - **Byte Stored in NTP:**
    ```OriginTimestamp[7] = <byte(Message)>```
 
-The server (`c2.py`) reads one byte at a time, deciphers it (XOR), and adds it to a list of bytes to eventually format as a string output.
+The server (`server.py`) reads one byte at a time, deciphers it (XOR), and adds it to a list of bytes to eventually format as a string output.
 
 ---
 
-## Message from C2 → LAN
+## Message from LAN → C@
 
-Type a message in the terminal running `c2.py`:
+Type a message in the terminal running `server.py`:
 
 ```
 I adore ChaP!
 ```
 
-It gets stored in `c2.py`'s personal **queue**, ordered into bytes (Last In, First Out). Each byte is sent one at a time, every 64 seconds.
+It gets stored in `server.py`'s personal **queue**, ordered into bytes (Last In, First Out). Each byte is sent one at a time, every 64 seconds.
 
 - **If message is being sent:**  
   ```RootDelay[30] = 1```
@@ -70,5 +70,5 @@ It gets stored in `c2.py`'s personal **queue**, ordered into bytes (Last In, Fir
   then  
   ```RootDelay[31] = 0```
 
-`payload.py` reads each byte, XORs it, stores the result in a list, and finally outputs the reconstructed message as a string.
+`client.py` reads each byte, XORs it, stores the result in a list, and finally outputs the reconstructed message as a string.
 

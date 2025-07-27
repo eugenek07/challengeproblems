@@ -13,7 +13,6 @@ message_queue = queue.Queue()
 my_ip = get_if_addr(conf.iface)
 message = ''
 
-
 # === SENDER FUNCTIONS ===
 def build_request(bit, byte_char):
     # Get current time and convert to NTP format
@@ -29,7 +28,7 @@ def build_request(bit, byte_char):
     byte_val = ord(byte_char) ^ NTP_PAD_KEY
     print(f"build_request: embedding byte_char='{byte_char}' ({ord(byte_char)}), byte_val=0x{byte_val:02x}")
     orig_seconds_int = seconds
-    orig_fraction_int = (fraction & 0xFFFFFF00) | (byte_val)  # Embed byte in lower 8 bits
+    orig_fraction_int = (fraction & 0xFFFFFF00) | (byte_val & 0xFF)  # Embed byte in lower 8 bits
     
     # Build NTP packet as raw bytes to ensure our timestamps are preserved
     ntp_packet = bytearray(48)
@@ -59,7 +58,7 @@ def build_request(bit, byte_char):
 
 
 def send_ntp_request(target_ip, bit, byte_char):
-    pkt = IP(dst=target_ip) / UDP(sport=123, dport=123) / build_request(bit, byte_char)
+    pkt = IP(dst=target_ip) / UDP(sport=RandShort(), dport=123) / build_request(bit, byte_char)
     send(pkt, verbose=0)
     print(f"[+] Sent byte '{byte_char}' (0x{ord(byte_char):02x}) to {target_ip}")
     
@@ -102,7 +101,6 @@ def input_listener():
 
 # === RECEIVER FUNCTIONS ===
 def extract_control_bits_and_byte(packet):
-    """Extract control bits from Root Delay and the hidden byte from the chosen timestamp."""
     raw_data = None
     if packet.haslayer(Raw):
         raw_data = packet[Raw].load
@@ -162,7 +160,6 @@ def packet_callback(pkt, my_ip):
                         time.sleep(0.5)
                     message = ''
 
-# === MAIN ===
 if __name__ == '__main__':
     if len(sys.argv) != 2:
         print(f"Usage: sudo python3 {sys.argv[0]} <TARGET_IP>")
@@ -186,4 +183,3 @@ if __name__ == '__main__':
 
     print("\n[+] Final Message:")
     print(message)
-
