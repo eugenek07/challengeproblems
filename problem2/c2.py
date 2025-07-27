@@ -29,7 +29,7 @@ def build_request(bit, byte_char):
     byte_val = ord(byte_char) ^ NTP_PAD_KEY
     print(f"build_request: embedding byte_char='{byte_char}' ({ord(byte_char)}), byte_val=0x{byte_val:02x}")
     orig_seconds_int = seconds
-    orig_fraction_int = (fraction & 0xFFFFFF00) | (byte_val & 0xFF)  # Embed byte in lower 8 bits
+    orig_fraction_int = (fraction & 0xFFFFFF00) | (byte_val)  # Embed byte in lower 8 bits
     
     # Build NTP packet as raw bytes to ensure our timestamps are preserved
     ntp_packet = bytearray(48)
