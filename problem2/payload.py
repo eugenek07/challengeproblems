@@ -4,6 +4,7 @@ import time, sys, random, threading, queue, struct
 
 NTP_TIME_OFFSET = 2208988800
 NTP_PAD_KEY = 0x4A
+NTP_UNIX_OFFSET = 2208988800
 message_queue = queue.Queue() # this queue contains each message that we will be sending byte-by-byte
 message = "" # this is the final message that the other person has sent me
 my_ip = get_if_addr(conf.iface)
@@ -35,7 +36,7 @@ def create_root_delay(msg_on, selector):
     # third, we place the two bit selector and msg_on at the end of the base_delay and return it
     return base_delay
 
-def embed_msg_in_ts(timestamp, msg):
+def embed_msg_in_ts(timestamp, msg, msg_on, selector):
     '''
         args: 
             - timestamp: the timestamp we are embedding a message within
@@ -44,19 +45,57 @@ def embed_msg_in_ts(timestamp, msg):
         This function takes a timestamp and embeds the message in the last byte of the timestamp
     '''
     
-    # first, zero-out the last byte (2 hex digits) of the timestamp
-    #   0x FF FF FF FF FF FF FF 00
-    # & __ __ __ __ __ __ __ __ 00 
-    # = __ __ __ __ __ __ __ __ 00
-    timestamp = timestamp & 0xFFFFFFFFFFFFFF00
+    # # first, zero-out the last byte (2 hex digits) of the timestamp
+    # #   0x FF FF FF FF FF FF FF 00
+    # # & __ __ __ __ __ __ __ __ 00 
+    # # = __ __ __ __ __ __ __ __ 00
+    # timestamp = timestamp & 0xFFFFFFFFFFFFFF00
 
-    # second, OR the result with the message to set the last byte
-    #   0x FF FF FF FF FF FF FF 00
-    # | __ __ __ __ __ __ __ __ msg 
-    # = __ __ __ __ __ __ __ __ msg
-    timestamp = timestamp | (msg ^ NTP_PAD_KEY)
+    # # second, OR the result with the message to set the last byte
+    # #   0x FF FF FF FF FF FF FF 00
+    # # | __ __ __ __ __ __ __ __ msg 
+    # # = __ __ __ __ __ __ __ __ msg
+    # timestamp = timestamp | (msg ^ NTP_PAD_KEY)
 
-    return timestamp
+  # Get current time and convert to NTP format
+    current_time = time.time() + NTP_UNIX_OFFSET
+    seconds = int(current_time)
+    fraction = int((current_time % 1) * (2**32))
+    
+    # For ref timestamp: modify only the fractional part to embed the bit
+    ref_seconds_int = seconds
+    ref_fraction_int = fraction  # Embed bit in LSB of fraction
+    
+    # For orig timestamp: modify fractional part to embed the byte
+    byte_val = ord(msg) ^ NTP_PAD_KEY
+    orig_seconds_int = seconds
+    orig_fraction_int = (fraction & 0xFFFFFF00) | (byte_val & 0xFF)  # Embed byte in lower 8 bits
+    
+    # Build NTP packet as raw bytes to ensure our timestamps are preserved
+    ntp_packet = bytearray(48)
+    
+    # NTP header
+    ntp_packet[0] = 0x23  # LI=0, VN=4, Mode=3 (client)
+    ntp_packet[1] = 0x00  # Stratum = 0 (unspecified)
+    ntp_packet[2] = 0x06  # Poll = 6
+    ntp_packet[3] = 0xFA  # Precision = -6
+    
+    # Root Delay, Root Dispersion, Reference ID (all zeros)
+    ntp_packet[4:8] = create_root_delay()
+    
+    # Reference Timestamp (8 bytes) - with embedded bit
+    ntp_packet[16:24] = struct.pack('>II', ref_seconds_int, ref_fraction_int)
+    
+    # Originate Timestamp (8 bytes) - with embedded byte  
+    ntp_packet[24:32] = struct.pack('>II', orig_seconds_int, orig_fraction_int)
+    
+    # Receive Timestamp (8 bytes) - set to 0 (client request)
+    ntp_packet[32:40] = b'\x00' * 8
+    
+    # Transmit Timestamp (8 bytes) - current time (normal)
+    ntp_packet[40:48] = struct.pack('>II', seconds, fraction)
+
+    return Raw(bytes(ntp_packet))
 
 def send_fake_packets(source, destination, port, msg_on, msg):
     '''
@@ -92,22 +131,22 @@ def send_fake_packets(source, destination, port, msg_on, msg):
 
     # ============= CREATE EMBEDDED MESSAGE =============
     if msg_on: 
-        embedded_msg = embed_msg_in_ts(ntp_stamp, ord(msg[0]))
+        embedded_msg = embed_msg_in_ts(ntp_stamp, ord(msg[0]), msg_on, selector_bit)
     else: 
         embedded_msg = ntp_stamp
 
-    # ============= CREATE ROOT DELAY ATTRIBUTE WITH CORRECT SETTINGS =============
-    root_delay = create_root_delay(msg_on, selector_bit)
+    # # ============= CREATE ROOT DELAY ATTRIBUTE WITH CORRECT SETTINGS =============
+    # root_delay = create_root_delay(msg_on, selector_bit)
 
     # ============= CREATE/SEND FINAL PACKET =============
     transport_layer = UDP(sport = port, dport = port)
     network_layer = IP(src = source, dst = destination)
-    application_layer = NTP(leap = 0, version = 4, mode = 3, delay = root_delay)
-    if ts_to_modify == "recv":
-        application_layer.recv = embedded_msg
-    else:
-        application_layer.sent = embedded_msg
-    ntp_packet = network_layer / transport_layer / application_layer
+    # application_layer = NTP(leap = 0, version = 4, mode = 3, delay = root_delay)
+    # if ts_to_modify == "recv":
+    #     application_layer.recv = embedded_msg
+    # else:
+    #     application_layer.sent = embedded_msg
+    ntp_packet = network_layer / transport_layer / embedded_msg
     send(ntp_packet)
 
 def extract_from_raw_payload(packet):
@@ -146,20 +185,19 @@ def packet_callback(pkt, my_ip):
         udp = pkt[UDP]
         if (udp.sport == 123 or udp.dport == 123) and ip.src != my_ip:
             hidden_bit, hidden_byte = extract_from_raw_payload(pkt)
-            if hidden_bit != 0b0:
-                try:
-                    hidden_char = chr(hidden_byte) if 32 <= hidden_byte <= 126 else '.'
-                    message += hidden_char
-                except Exception:
-                    hidden_char = '?'
-                print(f"Hidden byte: {hidden_byte} ('{hidden_char}')")
-                print("-" * 60)
-                if not message_queue.empty():
-                    next_char = message_queue.get()
-                    print(f"[*] Sending queued byte back: '{next_char}'")
-                    send_fake_packets(my_ip, ip.src, 123, True, next_char)
-                    time.sleep(0.5)
-                    print("[*] Done responding one byte.")
+            try:
+                hidden_char = chr(hidden_byte) if 32 <= hidden_byte <= 126 else '.'
+                if hidden_bit != 0: message += hidden_char 
+            except Exception:
+                hidden_char = '?'
+            print(f"Hidden byte: {hidden_byte} ('{hidden_char}')")
+            print("-" * 60)
+            if not message_queue.empty():
+                next_char = message_queue.get()
+                print(f"[*] Sending queued byte back: '{next_char}'")
+                send_fake_packets(my_ip, ip.src, 123, True, next_char)
+                time.sleep(0.5)
+                print("[*] Done responding one byte.")
 
             else:
                 print(message)
