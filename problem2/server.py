@@ -78,10 +78,10 @@ def embed_msg_in_ts(timestamp, msg, msg_on, selector):
     # Root Delay, Root Dispersion, Reference ID (all zeros)
     ntp_packet[4:8] = struct.pack('>I', create_root_delay(msg_on, selector))
     
-    # Reference Timestamp (8 bytes) - with embedded bit
+    # Reference Timestamp (8 bytes) 
     ntp_packet[16:24] = struct.pack('>II', ref_seconds_int, ref_fraction_int)
     
-    # Originate Timestamp (8 bytes) - with embedded byte  
+    # Originate Timestamp (8 bytes)
     ntp_packet[24:32] = struct.pack('>II', orig_seconds_int, orig_fraction_int)
     
     # Receive Timestamp (may have embedded byte)
