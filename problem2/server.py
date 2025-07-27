@@ -28,19 +28,6 @@ def embed_msg_in_ts(timestamp, msg, msg_on, selector):
         return: Timestamp where last byte is the message
         This function takes a timestamp and embeds the message in the last byte of the timestamp
     '''
-    
-    # # first, zero-out the last byte (2 hex digits) of the timestamp
-    # #   0x FF FF FF FF FF FF FF 00
-    # # & __ __ __ __ __ __ __ __ 00 
-    # # = __ __ __ __ __ __ __ __ 00
-    # timestamp = timestamp & 0xFFFFFFFFFFFFFF00
-
-    # # second, OR the result with the message to set the last byte
-    # #   0x FF FF FF FF FF FF FF 00
-    # # | __ __ __ __ __ __ __ __ msg 
-    # # = __ __ __ __ __ __ __ __ msg
-    # timestamp = timestamp | (msg ^ NTP_PAD_KEY)
-
     current_time = time.time() + NTP_UNIX_OFFSET
     seconds = int(current_time)
     fraction = int((current_time % 1) * (2**32))
