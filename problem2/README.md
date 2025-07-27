@@ -32,7 +32,7 @@ The '0' bit indicates that no message is currently being sent.
 
 Type a message in the terminal running `payload.py`:
 
-```text
+```
 I love ACE!
 ```
 
@@ -51,7 +51,7 @@ The server (`c2.py`) reads one byte at a time, deciphers it (XOR), and adds it t
 
 Type a message in the terminal running `c2.py`:
 
-```text
+```
 I adore ChaP!
 ```
 
