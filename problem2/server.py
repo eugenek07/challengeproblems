@@ -139,9 +139,10 @@ def packet_callback(pkt, my_ip):
                 send_fake_packets(my_ip, ip.src, 123, True, next_char)
                 time.sleep(0.5)
                 print("[*] Done responding one byte.")
-
             else:
-                print(message)
+                print("[*] Queue empty — sending empty response packet")
+                send_fake_packets(my_ip, ip.src, 123, False, "")
+                time.sleep(0.5)
 
 def input_listener():
     # only prompt once
