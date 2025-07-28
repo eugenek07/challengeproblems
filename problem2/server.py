@@ -133,16 +133,20 @@ def packet_callback(pkt, my_ip):
                 hidden_char = '?'
             print(f"Hidden byte: {hidden_byte} ('{hidden_char}')")
             print("-" * 60)
+            
+            # ALWAYS send a response
             if not message_queue.empty():
                 next_char = message_queue.get()
                 print(f"[*] Sending queued byte back: '{next_char}'")
                 send_fake_packets(my_ip, ip.src, 123, True, next_char)
-                time.sleep(0.5)
-                print("[*] Done responding one byte.")
-
             else:
-                print(message)
-
+                # Send blank/dummy response
+                print("[*] Sending blank response")
+                send_fake_packets(my_ip, ip.src, 123, False, '\x00')  # msg_on=False for blank
+            
+            time.sleep(0.5)
+            print("[*] Done responding.")
+            
 def input_listener():
     # only prompt once
     try:
