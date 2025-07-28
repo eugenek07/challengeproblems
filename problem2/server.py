@@ -74,7 +74,11 @@ def send_fake_packets(source, destination, port, msg_on, msg):
     if msg_on: 
         embedded_msg = embed_msg_in_ts(ntp_stamp, msg[0], msg_on, selector_bit)
     else: 
-        embedded_msg = ntp_stamp
+        #Build empty but valid NTP packet payload
+        ntp_packet = bytearray(48)
+        ntp_packet[0] = 0x24  # NTP header flags (can be any valid mode/version)
+        ntp_packet[24:32] = struct.pack('>II', sec_part, frac_part)
+        embedded_msg = Raw(bytes(ntp_packet))  #  wrap in Raw for Scapy
 
     # # ============= CREATE ROOT DELAY ATTRIBUTE WITH CORRECT SETTINGS =============
     # root_delay = create_root_delay(msg_on, selector_bit)
