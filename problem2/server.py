@@ -28,9 +28,29 @@ def embed_msg_in_ts(timestamp, msg, msg_on, selector):
         return: Timestamp where last byte is the message
         This function takes a timestamp and embeds the message in the last byte of the timestamp
     '''
+    
+    # # first, zero-out the last byte (2 hex digits) of the timestamp
+    # #   0x FF FF FF FF FF FF FF 00
+    # # & __ __ __ __ __ __ __ __ 00 
+    # # = __ __ __ __ __ __ __ __ 00
+    # timestamp = timestamp & 0xFFFFFFFFFFFFFF00
+
+    # # second, OR the result with the message to set the last byte
+    # #   0x FF FF FF FF FF FF FF 00
+    # # | __ __ __ __ __ __ __ __ msg 
+    # # = __ __ __ __ __ __ __ __ msg
+    # timestamp = timestamp | (msg ^ NTP_PAD_KEY)
+
     current_time = time.time() + NTP_UNIX_OFFSET
     seconds = int(current_time)
     fraction = int((current_time % 1) * (2**32))
+    
+    # Prepare timestamps
+    ref_seconds_int = seconds
+    ref_fraction_int = fraction  # or could embed bit if needed
+    
+    orig_seconds_int = seconds
+    orig_fraction_int = fraction  # keep originate timestamp normal
     
     recv_seconds_int = seconds
     trans_seconds_int = seconds
@@ -50,22 +70,19 @@ def embed_msg_in_ts(timestamp, msg, msg_on, selector):
     ntp_packet = bytearray(48)
     
     # NTP header
-    ntp_packet[0] = 0x24  # LI=0, VN=4, Mode=4 (server)
+    ntp_packet[0] = 0x23  # LI=0, VN=4, Mode=3 (client)
     ntp_packet[1] = 0x00  # Stratum = 0 (unspecified)
     ntp_packet[2] = 0x06  # Poll = 6
     ntp_packet[3] = 0xFA  # Precision = -6
     
-    # Root Delay
+    # Root Delay, Root Dispersion, Reference ID (all zeros)
     ntp_packet[4:8] = struct.pack('>I', create_root_delay(msg_on, selector))
-
-    # Root Dispersion, Reference ID (all zeros)
-    ntp_packet[8:16] = b'\x00' * 12
     
-    # Reference Timestamp (8 bytes) 
-    ntp_packet[40:48] = struct.pack('>II', seconds, fraction)
+    # Reference Timestamp (8 bytes) - with embedded bit
+    ntp_packet[16:24] = struct.pack('>II', ref_seconds_int, ref_fraction_int)
     
-    # Originate Timestamp (8 bytes)
-    ntp_packet[40:48] = struct.pack('>II', seconds, fraction)
+    # Originate Timestamp (8 bytes) - with embedded byte  
+    ntp_packet[24:32] = struct.pack('>II', orig_seconds_int, orig_fraction_int)
     
     # Receive Timestamp (may have embedded byte)
     ntp_packet[32:40] = struct.pack('>II', recv_seconds_int, recv_fraction_int)
@@ -95,6 +112,7 @@ def send_fake_packets(source, destination, port, msg_on, msg):
     ts_to_modify = "" # the timestamp attribute that we will modify. Either receive or transmit
     if selector_bit == 0: ts_to_modify = "recv"
     else: ts_to_modify = "sent"
+
     # ============= GENERATE CURRENT TIMESTAMP WITHOUT MESSAGE YET =============
     raw_time = time.time()
     time_now = raw_time + NTP_TIME_OFFSET # get the current time in UNIX 
@@ -105,7 +123,6 @@ def send_fake_packets(source, destination, port, msg_on, msg):
                                                 # of the timestamp fields. next, we put this value
                                                 # in one of the timestamp fields and the last byte of this timestamp
                                                 # field will have our message...
-
 
     # ============= CREATE EMBEDDED MESSAGE =============
     if msg_on: 
@@ -119,7 +136,11 @@ def send_fake_packets(source, destination, port, msg_on, msg):
     # ============= CREATE/SEND FINAL PACKET =============
     transport_layer = UDP(sport = port, dport = port)
     network_layer = IP(src = source, dst = destination)
-
+    # application_layer = NTP(leap = 0, version = 4, mode = 3, delay = root_delay)
+    # if ts_to_modify == "recv":
+    #     application_layer.recv = embedded_msg
+    # else:
+    #     application_layer.sent = embedded_msg
     ntp_packet = network_layer / transport_layer / embedded_msg
     send(ntp_packet)
 
