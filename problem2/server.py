@@ -32,7 +32,7 @@ def embed_msg_in_ts(timestamp, msg, msg_on, selector):
     
     # Build packet with byte in originate timestamp
     ntp_packet = bytearray(48)
-    ntp_packet[0] = 0x23
+    ntp_packet[0] = 0x24
     # ... other header fields ...
     ntp_packet[24:32] = struct.pack('>II', seconds, orig_fraction_int)  # Originate timestamp
     

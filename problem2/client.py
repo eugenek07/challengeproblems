@@ -49,15 +49,23 @@ def send_ntp_request(target_ip, byte_char):
     print(f"[+] Sent byte '{byte_char}' (0x{ord(byte_char):02x}) to {target_ip}")
 
 def sender_loop(ip):
+    message_sent = False
     while True:
         if not message_queue.empty():
             msg = message_queue.get()
             print(f"[*] Sending message: '{msg}'")
             for byte_char in msg:
                 send_ntp_request(ip, byte_char)
-                time.sleep(1.5)
+                time.sleep(5)
             print(f"[*] Message complete")
-
+            message_sent = True
+        elif message_sent:
+            # Send blank/dummy packets after message is complete
+            send_ntp_request(ip, '\x00')  # or some dummy character
+            time.sleep(5)
+        else:
+            time.sleep(0.1)  # Small delay when waiting for first message
+            
 def input_listener():
     while True:
         try:
