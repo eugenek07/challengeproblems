@@ -21,75 +21,21 @@ def create_root_delay(msg_on, selector):
     return base_delay
 
 def embed_msg_in_ts(timestamp, msg, msg_on, selector):
-    '''
-        args: 
-            - timestamp: the timestamp we are embedding a message within
-            - msg: the message we are embedding
-        return: Timestamp where last byte is the message
-        This function takes a timestamp and embeds the message in the last byte of the timestamp
-    '''
-    
-    # # first, zero-out the last byte (2 hex digits) of the timestamp
-    # #   0x FF FF FF FF FF FF FF 00
-    # # & __ __ __ __ __ __ __ __ 00 
-    # # = __ __ __ __ __ __ __ __ 00
-    # timestamp = timestamp & 0xFFFFFFFFFFFFFF00
-
-    # # second, OR the result with the message to set the last byte
-    # #   0x FF FF FF FF FF FF FF 00
-    # # | __ __ __ __ __ __ __ __ msg 
-    # # = __ __ __ __ __ __ __ __ msg
-    # timestamp = timestamp | (msg ^ NTP_PAD_KEY)
-
     current_time = time.time() + NTP_UNIX_OFFSET
     seconds = int(current_time)
     fraction = int((current_time % 1) * (2**32))
     
-    # Prepare timestamps
-    ref_seconds_int = seconds
-    ref_fraction_int = fraction  # or could embed bit if needed
-    
-    orig_seconds_int = seconds
-    orig_fraction_int = fraction  # keep originate timestamp normal
-    
-    recv_seconds_int = seconds
-    trans_seconds_int = seconds
-    
     byte_val = ord(msg) ^ NTP_PAD_KEY
-
-    if selector == 1:
-        # Embed in Receive Timestamp
-        recv_fraction_int = (fraction & 0xFFFFFF00) | (byte_val & 0xFF)
-        trans_fraction_int = fraction  # normal
-    else:
-        # Embed in Transmit Timestamp
-        recv_fraction_int = fraction  # normal
-        trans_fraction_int = (fraction & 0xFFFFFF00) | (byte_val & 0xFF)
     
-    # Build NTP packet as raw bytes to ensure our timestamps are preserved
+    # Put byte in originate timestamp (to match receiver)
+    orig_fraction_int = (fraction & 0xFFFFFF00) | (byte_val & 0xFF)
+    
+    # Build packet with byte in originate timestamp
     ntp_packet = bytearray(48)
+    ntp_packet[0] = 0x23
+    # ... other header fields ...
+    ntp_packet[24:32] = struct.pack('>II', seconds, orig_fraction_int)  # Originate timestamp
     
-    # NTP header
-    ntp_packet[0] = 0x23  # LI=0, VN=4, Mode=3 (client)
-    ntp_packet[1] = 0x00  # Stratum = 0 (unspecified)
-    ntp_packet[2] = 0x06  # Poll = 6
-    ntp_packet[3] = 0xFA  # Precision = -6
-    
-    # Root Delay, Root Dispersion, Reference ID (all zeros)
-    ntp_packet[4:8] = struct.pack('>I', create_root_delay(msg_on, selector))
-    
-    # Reference Timestamp (8 bytes) - with embedded bit
-    ntp_packet[16:24] = struct.pack('>II', ref_seconds_int, ref_fraction_int)
-    
-    # Originate Timestamp (8 bytes) - with embedded byte  
-    ntp_packet[24:32] = struct.pack('>II', orig_seconds_int, orig_fraction_int)
-    
-    # Receive Timestamp (may have embedded byte)
-    ntp_packet[32:40] = struct.pack('>II', recv_seconds_int, recv_fraction_int)
-    
-    # Transmit Timestamp (may have embedded byte)
-    ntp_packet[40:48] = struct.pack('>II', trans_seconds_int, trans_fraction_int)
-
     return Raw(bytes(ntp_packet))
 
 def send_fake_packets(source, destination, port, msg_on, msg):
